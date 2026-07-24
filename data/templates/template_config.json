@@ -1,0 +1,36 @@
+{
+  "az": {
+    "file": "template1.png",
+    "size": [1080, 1080],
+    "font": "fonts/Montserrat-ExtraBold.ttf",
+    "quote": {
+      "color": "#ebd095",
+      "uppercase": true,
+      "center_x": 540,
+      "box_top": 42,
+      "box_bottom": 165,
+      "max_width": 920,
+      "base_size": 54,
+      "min_size": 30,
+      "max_lines": 3,
+      "line_spacing": 1.28
+    }
+  },
+  "ru": {
+    "file": "template2.png",
+    "size": [1080, 1080],
+    "font": "fonts/Montserrat-ExtraBold.ttf",
+    "quote": {
+      "color": "#ebd095",
+      "uppercase": true,
+      "center_x": 540,
+      "box_top": 42,
+      "box_bottom": 165,
+      "max_width": 920,
+      "base_size": 54,
+      "min_size": 30,
+      "max_lines": 3,
+      "line_spacing": 1.28
+    }
+  }
+}

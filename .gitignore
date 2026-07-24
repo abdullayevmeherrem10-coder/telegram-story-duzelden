@@ -1,0 +1,5 @@
+.env
+__pycache__/
+*.pyc
+data/smm.db
+data/output/
