@@ -106,6 +106,12 @@ def _generate(system: str, prompt: str) -> PostContent:
             if response.parsed is None:
                 return PostContent.model_validate_json(response.text)
             return response.parsed
+        except genai_errors.ServerError as e:
+            # 503 və s. = Google tərəfi yüklüdür -> növbəti modelə keç
+            logger.warning("Model %s işləmədi (%s), növbətiyə keçilir",
+                           model, e.code)
+            last_error = e
+            continue
         except genai_errors.ClientError as e:
             # 429 = limit dolub, 404 = model mövcud deyil -> növbəti modelə keç
             if e.code in (429, 404):
