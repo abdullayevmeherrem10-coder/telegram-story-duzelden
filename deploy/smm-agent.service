@@ -1,0 +1,20 @@
+[Unit]
+Description=SMM Agent — Telegram stat postu botu
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__APPDIR__
+ExecStart=__APPDIR__/.venv/bin/python __APPDIR__/main.py
+# Bot hər hansı səbəbdən düşsə, 10 saniyə sonra özü qalxır
+Restart=always
+RestartSec=10
+# Loglar journalctl-ə düşsün
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=smm-agent
+
+[Install]
+WantedBy=multi-user.target

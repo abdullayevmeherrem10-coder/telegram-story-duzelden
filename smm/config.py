@@ -20,7 +20,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODELS = [
     m.strip() for m in os.getenv(
         "GEMINI_MODEL",
-        "gemini-3.6-flash,gemini-3.5-flash,gemini-3.1-pro,gemini-2.5-flash",
+        "gemini-3.6-flash,gemini-3.5-flash,gemini-3-flash-preview,"
+        "gemini-3.5-flash-lite,gemini-3.1-flash-lite",
     ).split(",") if m.strip()
 ]
 
@@ -38,6 +39,10 @@ TELEGRAM_ADMIN_IDS = [
 DAILY_POST_COUNT = int(os.getenv("DAILY_POST_COUNT", "5"))
 DAILY_POST_TIME = os.getenv("DAILY_POST_TIME", "09:00")  # SS:DD formatında
 TIMEZONE = os.getenv("TIMEZONE", "Asia/Baku")
+
+# Hazır post şəkilləri neçə gün saxlanılsın (diskin dolmasının qarşısını alır).
+# 0 və ya mənfi dəyər -> təmizləmə söndürülür.
+OUTPUT_RETENTION_DAYS = int(os.getenv("OUTPUT_RETENTION_DAYS", "30"))
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 

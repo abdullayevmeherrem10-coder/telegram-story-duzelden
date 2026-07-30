@@ -5,11 +5,15 @@ böyük hərflərlə, Montserrat ExtraBold şrifti ilə yazılır. Mətn uzun ol
 şrift ölçüsü avtomatik kiçilir ki, sahəyə sığsın.
 """
 import json
+import logging
+import os
 import time
 
 from PIL import Image, ImageDraw, ImageFont
 
 from . import config
+
+logger = logging.getLogger(__name__)
 
 
 def _load_template_config(template: str) -> dict:
@@ -55,6 +59,40 @@ def _fit_text(draw: ImageDraw.ImageDraw, text: str, font_path: str,
     return font, lines, int(spec["min_size"] * spec["line_spacing"])
 
 
+def prune_old_outputs(days: int | None = None) -> int:
+    """Köhnə post şəkillərini silir və silinən sayını qaytarır.
+
+    Kiçik diskli hostinqlərdə (məs. PythonAnywhere — 1 GB) şəkillər ayda
+    ~150 MB yığır və nəhayət disk dolur. Hər yeni şəkildən sonra çağırılır.
+    """
+    days = config.OUTPUT_RETENTION_DAYS if days is None else days
+    if days <= 0:
+        return 0
+
+    cutoff = time.time() - days * 86400
+    removed = 0
+    try:
+        entries = list(os.scandir(config.OUTPUT_DIR))
+    except OSError:
+        return 0
+
+    for entry in entries:
+        if not entry.is_file() or not entry.name.endswith(".png"):
+            continue
+        try:
+            if entry.stat().st_mtime < cutoff:
+                os.remove(entry.path)
+                removed += 1
+        except OSError:
+            # Fayl paralel silinib və ya kilidlidir — problem deyil
+            continue
+
+    if removed:
+        logger.info("%s köhnə post şəkli silindi (%s gündən köhnə)",
+                    removed, days)
+    return removed
+
+
 def render_post_image(quote: str, template: str = "az") -> str:
     """Statı şablon üzərinə yazıb hazır şəklin yolunu qaytarır.
 
@@ -88,4 +126,5 @@ def render_post_image(quote: str, template: str = "az") -> str:
 
     out_path = config.OUTPUT_DIR / f"post_{template}_{int(time.time() * 1000)}.png"
     img.save(out_path)
+    prune_old_outputs()
     return str(out_path)
