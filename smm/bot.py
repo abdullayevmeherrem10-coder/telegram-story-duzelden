@@ -360,8 +360,18 @@ async def _post_init(app: Application):
 
 
 def build_app() -> Application:
-    app = Application.builder().token(
-        config.TELEGRAM_BOT_TOKEN).post_init(_post_init).build()
+    # Şəkillər ~1 MB-dır. Standart limitlər (write 5 san, media 20 san)
+    # yavaş şəbəkədə çatmır və "TimedOut" xətası verir — genişləndirilib.
+    app = (
+        Application.builder()
+        .token(config.TELEGRAM_BOT_TOKEN)
+        .connect_timeout(30)
+        .read_timeout(30)
+        .write_timeout(30)
+        .media_write_timeout(180)
+        .post_init(_post_init)
+        .build()
+    )
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("yeni", cmd_yeni))
     app.add_handler(CommandHandler("rusca", cmd_rusca))

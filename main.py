@@ -22,7 +22,9 @@ def main():
     app = bot.build_app()
     print(f"🤖 SMM Agent işə düşdü (beyin: {config.AI_PROVIDER}). "
           "Telegram-da botuna /start yaz.")
-    app.run_polling()
+    # Bot dayanan müddətdə yığılan köhnə əmrlər icra olunmasın — əks halda
+    # hər yenidən başlayanda günlərlə əvvəlki əmrlər təkrar işə düşür.
+    app.run_polling(drop_pending_updates=True)
 
 
 if __name__ == "__main__":
