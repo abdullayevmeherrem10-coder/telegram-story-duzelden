@@ -1,14 +1,31 @@
 # Serverə yerləşdirmə
 
+> **Hazırkı vəziyyət:** bot **PythonAnywhere**-də işləyir. Aşağıdakı VPS
+> təlimatı gələcəkdə klassik serverə (Ubuntu/Debian) keçmək lazım olsa
+> keçərlidir — icra zamanı bu qovluqdakı heç bir fayl istifadə olunmur.
+
+## PythonAnywhere (hazırkı hosting)
+
+İdarəetmə [pythonanywhere.com](https://www.pythonanywhere.com) veb-panelindən gedir:
+
+- **Consoles** bölməsində Bash konsolu aç → `cd ~/smm-agent`
+- Kodu yenilə: `git pull`
+- Botu yenidən başlat: köhnə prosesi dayandırıb `python main.py` işə sal
+  (və ya "Always-on task" istifadə olunursa, paneldən restart et)
+- Loglara konsoldakı çıxışdan bax
+
+Qeyd: PythonAnywhere şəbəkəsi yavaş ola bildiyindən Telegram
+timeout-ları kodda genişləndirilib (media 180 san).
+
+## Alternativ: öz VPS-in (Ubuntu/Debian)
+
 Botu istənilən Ubuntu/Debian serverdə 24/7 işlədir. `systemd` ilə qurulur —
 server yenidən başlasa və ya bot düşsə, özü avtomatik qalxır.
-
-## Addımlar
 
 **1. Serverə qoşul**
 
 ```bash
-ssh -i ~/.ssh/oracle_smm ubuntu@SERVER_IP
+ssh -i ~/.ssh/ACAR_FAYLI ubuntu@SERVER_IP
 ```
 
 **2. Layihəni götür**
@@ -24,7 +41,7 @@ git clone https://github.com/abdullayevmeherrem10-coder/telegram-story-duzelden.
 Bu əmr **lokal kompüterdə** işlədilir:
 
 ```powershell
-scp -i $env:USERPROFILE\.ssh\oracle_smm "d:\Süni intelekt\smm-agent\.env" ubuntu@SERVER_IP:~/smm-agent/.env
+scp -i $env:USERPROFILE\.ssh\ACAR_FAYLI yol\smm-agent\.env ubuntu@SERVER_IP:~/smm-agent/.env
 ```
 
 **4. Quraşdır**
@@ -37,7 +54,7 @@ bash deploy/install.sh
 Skript hər şeyi özü edir: Python, virtual mühit, asılılıqlar, `.env` yoxlaması,
 systemd servisi. Sonda vəziyyəti göstərir.
 
-## Gündəlik istifadə
+**Gündəlik istifadə:**
 
 ```bash
 sudo systemctl status smm-agent      # işləyir, ya yox
@@ -46,7 +63,7 @@ sudo systemctl restart smm-agent     # yenidən başlat
 sudo systemctl stop smm-agent        # dayandır
 ```
 
-## Kodu yeniləmək
+**Kodu yeniləmək:**
 
 ```bash
 cd ~/smm-agent
@@ -56,15 +73,15 @@ sudo systemctl restart smm-agent
 
 ## ⚠️ Vacib: eyni anda yalnız BİR nüsxə işləməlidir
 
-Telegram bir botun `getUpdates` axınına yalnız bir müştəri buraxır. Server və
-lokal kompüter eyni vaxtda işləsə, ikisi də növbə ilə xəta verəcək:
+Telegram bir botun `getUpdates` axınına yalnız bir müştəri buraxır. İki yerdə
+(məsələn, PythonAnywhere + lokal kompüter) eyni vaxtda işləsə, ikisi də
+növbə ilə xəta verəcək:
 
 ```
 Conflict: terminated by other getUpdates request
 ```
 
-Ona görə serverdə qaldırandan sonra lokal nüsxəni bağla. Lokalda test etmək
-lazım olanda əvvəlcə `sudo systemctl stop smm-agent` et.
+Lokalda test etmək lazım olanda əvvəlcə serverdəki nüsxəni dayandır.
 
 ## Nə saxlanılır
 
