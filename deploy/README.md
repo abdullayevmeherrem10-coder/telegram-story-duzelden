@@ -6,13 +6,18 @@
 
 ## PythonAnywhere (hazırkı hosting)
 
+Bot **Always-on task** kimi işləyir — düşəndə platforma özü qaldırır.
 İdarəetmə [pythonanywhere.com](https://www.pythonanywhere.com) veb-panelindən gedir:
 
-- **Consoles** bölməsində Bash konsolu aç → `cd ~/smm-agent`
-- Kodu yenilə: `git pull`
-- Botu yenidən başlat: köhnə prosesi dayandırıb `python main.py` işə sal
-  (və ya "Always-on task" istifadə olunursa, paneldən restart et)
-- Loglara konsoldakı çıxışdan bax
+- Kodu yenilə: Bash konsolunda `cd ~/smm-agent && git pull`
+- Botu yenidən başlat: **Tasks** səhifəsində always-on task-ın yanındakı
+  restart düyməsi (və ya API: `POST .../always_on/<id>/restart/`)
+- Loglar: **Tasks** səhifəsində task-ın log linki
+  (`/var/log/alwayson-log-<id>.log`)
+
+⚠️ Konsolda `python main.py` İŞLƏTMƏ — always-on nüsxə ilə
+`Conflict: terminated by other getUpdates request` toqquşması yaranır.
+Konsol yalnız `git pull` və fayl işləri üçündür.
 
 Qeyd: PythonAnywhere şəbəkəsi yavaş ola bildiyindən Telegram
 timeout-ları kodda genişləndirilib (media 180 san).
