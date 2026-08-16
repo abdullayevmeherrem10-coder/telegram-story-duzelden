@@ -157,6 +157,41 @@ def generate_post(topic: str | None = None,
     return _generate(_system_prompt(brand), prompt)
 
 
+def generate_chakra_post(chakra_name: str, chakra_hint: str,
+                         avoid_ideas: list[str] | None = None) -> PostContent:
+    """Konkret bir çakra haqqında maarifləndirici stat postu yaradır.
+
+    Statda (quote) "çakra" sözü mütləq keçməlidir — şərt ödənməsə,
+    bir neçə dəfə yenidən cəhd edilir.
+    """
+    brand = _load_brand_profile()
+    prompt = f"""Bu gün üçün konkret bir ÇAKRA haqqında stat postu hazırla.
+
+Çakra: {chakra_name}
+Yeri və mahiyyəti: {chakra_hint}
+
+Xüsusi tələblər:
+- quote-da "çakra" sözü MÜTLƏQ keçməlidir (məsələn: "Kök çakran güclüdürsə,
+  heç bir fırtına səni yıxa bilməz"). Söz hallanmış formada da ola bilər
+  (çakran, çakrası).
+- caption maarifləndirici olsun: bu çakranın adı, bədəndə yeri, nəyə cavabdeh
+  olduğu və zəif/bağlı olanda insanın nə hiss etdiyi — 2-3 cümlə, sonda
+  brendin tonunda yumşaq hərəkətə çağırış.
+- Tibbi diaqnoz qoyma, müalicə vədi vermə."""
+    if avoid_ideas:
+        listed = "\n".join(f"- {i}" for i in avoid_ideas)
+        prompt += ("\n\nBu gün artıq bu statlar hazırlanıb, onlardan həm mövzuca, "
+                   f"həm bənzətməcə TAMAMİLƏ FƏRQLİ bir stat yaz:\n{listed}")
+    content = None
+    for attempt in range(3):
+        content = _generate(_system_prompt(brand), prompt)
+        if "çakra" in content.quote.lower():
+            return content
+        logger.warning("Çakra statında 'çakra' sözü yoxdur (cəhd %s): %s",
+                       attempt + 1, content.quote)
+    return content
+
+
 def generate_russian_post(topic: str | None = None,
                           avoid_ideas: list[str] | None = None) -> PostContent:
     """Birbaşa rus dilində stat postu yaradır."""

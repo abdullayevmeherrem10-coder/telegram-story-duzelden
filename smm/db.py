@@ -24,6 +24,11 @@ CREATE TABLE IF NOT EXISTS usage (
     count INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (date, model)
 );
+
+CREATE TABLE IF NOT EXISTS state (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 """
 
 
@@ -77,6 +82,20 @@ def usage_today(model: str) -> int:
         row = c.execute("SELECT count FROM usage WHERE date=? AND model=?",
                         (_today(), model)).fetchone()
         return row["count"] if row else 0
+
+
+def get_state(key: str, default: str | None = None) -> str | None:
+    with _conn() as c:
+        row = c.execute("SELECT value FROM state WHERE key=?", (key,)).fetchone()
+        return row["value"] if row else default
+
+
+def set_state(key: str, value: str):
+    with _conn() as c:
+        c.execute(
+            "INSERT INTO state (key, value) VALUES (?,?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (key, value))
 
 
 def add_post(idea: str, caption: str, hashtags: str,

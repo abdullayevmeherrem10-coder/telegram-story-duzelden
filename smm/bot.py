@@ -50,12 +50,31 @@ TOPIC_CHOICES = {
     "energy": "Çakralar, aura və enerji",
 }
 
-# Gündəlik paketin mövzu planı (2 + 2, sonda 1 rusca versiya)
+# Gündəlik paketin mövzu planı (2 + 2, sonda 1 rusca versiya).
+# Enerji postlarından (3-cü/4-cü) biri hər gün konkret bir çakraya həsr olunur.
 DAILY_TOPICS = [
     "Qadın və kişi münasibətləri, ailədə bərəkət və harmoniya",
     "Qadın və kişi münasibətləri, ailədə bərəkət və harmoniya",
     "Çakralar, aura və enerji",
     "Çakralar, aura və enerji",
+]
+
+# 7 çakra — gün-gün növbə ilə fırlanır (növbə bazadakı state-də saxlanılır)
+CHAKRAS = [
+    ("Kök çakra (Muladhara)",
+     "onurğanın dibində; təhlükəsizlik, torpağa bağlılıq, sabitlik, yaşam gücü"),
+    ("Sakral çakra (Svadhistana)",
+     "göbəkdən bir az aşağıda; həzz, yaradıcılıq, duyğuların sərbəst axını"),
+    ("Günəş kəbəsi çakrası (Manipura)",
+     "qarın nahiyəsində; iradə, özünəinam, daxili güc və qərarlılıq"),
+    ("Ürək çakrası (Anahata)",
+     "sinənin ortasında; sevgi, mərhəmət, bağışlama, qəbul etmə"),
+    ("Boğaz çakrası (Vişuddha)",
+     "boğazda; özünüifadə, həqiqəti demək, daxili səsə sədaqət"),
+    ("Üçüncü göz çakrası (Acna)",
+     "qaşların arasında; intuisiya, aydın görmə, daxili müdriklik"),
+    ("Tac çakrası (Sahasrara)",
+     "başın təpəsində; kainatla bağlılıq, mənəvi oyanış, bütövlük"),
 ]
 
 
@@ -153,7 +172,11 @@ async def _send_post(bot: Bot, chat_id: int, post_id: int, prefix: str = ""):
 
 
 async def _send_daily_batch(bot: Bot, chat_id: int):
-    """Günün paketi: 2 münasibət + 2 enerji statı (AZ) + 1 rusca versiya."""
+    """Günün paketi: 2 münasibət + 2 enerji statı (AZ) + 1 rusca versiya.
+
+    Enerji postlarından biri (gah 3-cü, gah 4-cü) hər gün 7 çakradan
+    növbətisinə həsr olunur — statında "çakra" sözü mütləq keçir.
+    """
     total = len(DAILY_TOPICS) + 1
     await bot.send_message(
         chat_id, f"🌅 Günün {total} postu hazırlanır, bir neçə dəqiqə çəkə bilər...")
@@ -162,10 +185,20 @@ async def _send_daily_batch(bot: Bot, chat_id: int):
     quotes: list[str] = []
     done = 0
 
+    chakra_idx = int(db.get_state("chakra_idx", "0"))
+    chakra_pos = 2 + chakra_idx % 2  # təbii görünsün deyə gah 3-cü, gah 4-cü
+
     for i, topic in enumerate(DAILY_TOPICS):
         try:
-            content = await asyncio.to_thread(
-                brain.generate_post, topic, ideas if ideas else None)
+            if i == chakra_pos:
+                name, hint = CHAKRAS[chakra_idx % len(CHAKRAS)]
+                content = await asyncio.to_thread(
+                    brain.generate_chakra_post, name, hint,
+                    ideas if ideas else None)
+                db.set_state("chakra_idx", str(chakra_idx + 1))
+            else:
+                content = await asyncio.to_thread(
+                    brain.generate_post, topic, ideas if ideas else None)
             post_id = await asyncio.to_thread(_save_post, content, "az")
             ideas.append(content.idea)
             quotes.append(content.quote)
