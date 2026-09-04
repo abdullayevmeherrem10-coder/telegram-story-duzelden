@@ -2,7 +2,7 @@
 
 Əmrlər:
   /yeni [mövzu]  - yeni stat postu yarat (mövzu yazılmasa, AI özü seçir)
-  /gundelik      - günün post paketini indi hazırla (2 münasibət + 2 enerji + 1 rus)
+  /gundelik      - günün post paketini indi hazırla (2 ümumi + 2 enerji + 1 rus)
   /siyahi        - son postlar və statusları
   /yardim        - əmrlərin siyahısı
 
@@ -10,6 +10,7 @@ Hər gün DAILY_POST_TIME vaxtında bot avtomatik günün paketini hazırlayıb
 təsdiq üçün göndərir.
 """
 import asyncio
+import random
 import datetime
 import logging
 from pathlib import Path
@@ -50,14 +51,41 @@ TOPIC_CHOICES = {
     "energy": "Çakralar, aura və enerji",
 }
 
-# Gündəlik paketin mövzu planı (2 + 2, sonda 1 rusca versiya).
-# Enerji postlarından (3-cü/4-cü) biri hər gün konkret bir çakraya həsr olunur.
-DAILY_TOPICS = [
-    "Qadın və kişi münasibətləri, ailədə bərəkət və harmoniya",
-    "Qadın və kişi münasibətləri, ailədə bərəkət və harmoniya",
-    "Çakralar, aura və enerji",
-    "Çakralar, aura və enerji",
+# Gündəlik paket: 2 ümumi + 2 enerji statı (sonda 1 rusca versiya).
+# Hər gün ümumi hovuzdan 2, enerji hovuzundan 2 mövzu təsadüfi seçilir.
+# Enerji postlarından biri hər gün konkret bir çakraya (növbə ilə) həsr olunur.
+# Enerji hovuzundakı mövzular (çakra, intuisiya, özünütəlqin, şükür) burada YOXDUR.
+GENERAL_TOPIC_POOL = [
+    "Qadın və kişi münasibətləri, ailə harmoniyası, ailədə bərəkət",
+    "Daxili rahatlıq və mənəvi inkişaf",
+    "İnsan psixologiyası və hisslər",
+    "Münasibətlər",
+    "Şüuraltı",
+    "Tantra yoqa",
+    "Nəfəs texnikaları",
+    "Ruhani oyanış və aydınlanma",
+    "Bolluq və bərəkət enerjisi",
+    "Sevgi enerjisi",
+    "Keçmişi buraxmaq və enerjini yeniləmək",
+    "Təbiətlə enerji balansı",
 ]
+ENERGY_TOPIC_POOL = [
+    "Çakralar, aura və enerji",
+    "İntuisiya, altıncı hiss və bəsirət",
+    "Özünütəlqin",
+    "Şükür və yüksək vibrasiya",
+]
+GENERAL_PER_DAY = 2
+ENERGY_PER_DAY = 2
+DAILY_POST_COUNT = GENERAL_PER_DAY + ENERGY_PER_DAY
+
+
+def _pick_daily_topics() -> list[str]:
+    """Günün 4 mövzusu: 2 ümumi hovuzdan + 2 enerji hovuzundan (təsadüfi)."""
+    general = random.sample(GENERAL_TOPIC_POOL, GENERAL_PER_DAY)
+    energy = random.sample(ENERGY_TOPIC_POOL, ENERGY_PER_DAY)
+    return general + energy
+
 
 # 7 çakra — gün-gün növbə ilə fırlanır (növbə bazadakı state-də saxlanılır)
 CHAKRAS = [
@@ -172,12 +200,14 @@ async def _send_post(bot: Bot, chat_id: int, post_id: int, prefix: str = ""):
 
 
 async def _send_daily_batch(bot: Bot, chat_id: int):
-    """Günün paketi: 2 münasibət + 2 enerji statı (AZ) + 1 rusca versiya.
+    """Günün paketi: 2 ümumi + 2 enerji statı (AZ) + 1 rusca versiya.
 
-    Enerji postlarından biri (gah 3-cü, gah 4-cü) hər gün 7 çakradan
-    növbətisinə həsr olunur — statında "çakra" sözü mütləq keçir.
+    Ümumi statlar GENERAL_TOPIC_POOL-dan, enerji statları ENERGY_TOPIC_POOL-dan
+    təsadüfi seçilir. Enerji postlarından biri (gah 3-cü, gah 4-cü) hər gün
+    7 çakradan növbətisinə həsr olunur — statında "çakra" sözü mütləq keçir.
     """
-    total = len(DAILY_TOPICS) + 1
+    total = DAILY_POST_COUNT + 1
+    daily_topics = _pick_daily_topics()
     await bot.send_message(
         chat_id, f"🌅 Günün {total} postu hazırlanır, bir neçə dəqiqə çəkə bilər...")
 
@@ -186,9 +216,9 @@ async def _send_daily_batch(bot: Bot, chat_id: int):
     done = 0
 
     chakra_idx = int(db.get_state("chakra_idx", "0"))
-    chakra_pos = 2 + chakra_idx % 2  # təbii görünsün deyə gah 3-cü, gah 4-cü
+    chakra_pos = GENERAL_PER_DAY + chakra_idx % 2  # gah 3-cü, gah 4-cü
 
-    for i, topic in enumerate(DAILY_TOPICS):
+    for i, topic in enumerate(daily_topics):
         try:
             if i == chakra_pos:
                 name, hint = CHAKRAS[chakra_idx % len(CHAKRAS)]
