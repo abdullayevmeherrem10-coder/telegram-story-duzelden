@@ -35,13 +35,13 @@ DEFAULT_FILES = [
     "README.md",
     "data/brand_profile.json",
     "data/templates/template_config.json",
+    "data/templates/template1.png",
+    "data/templates/template2.png",
     "data/templates/template3.png",
     "data/templates/template4.png",
     "data/templates/template5.png",
-    "data/templates/template6.png",
-    "data/templates/template7.png",
-    "data/templates/template_ru3.png",
-    "data/templates/template_ru4.png",
+    "data/templates/template_ru1.png",
+    "data/templates/template_ru2.png",
     "data/templates/fonts/Montserrat-ExtraBold.ttf",
 ]
 

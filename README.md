@@ -30,19 +30,19 @@ Anthropic Claude. `.env`-də `AI_PROVIDER` ilə seçilir.
    məlumatlarını yaz (ton, mövzular, hashtag-lar). Bu, sistemin "beynidir".
 
 6. Şablonlar `data/templates/` qovluğundadır (mətnsiz PNG, 1080×1080):
-   - `template3.png` — AZ, dırnaqlar arasında sol tərəfdə stat
-   - `template4.png` — AZ, yuxarıdakı düzbucaqlı daxilində stat
-   - `template5.png` — AZ, mavi-yaşıl qutuda kiçik hərflərlə stat
-   - `template6.png` — AZ, tünd yaşıl ləkədə dırnaq ilə xətt arasında stat
-   - `template7.png` — AZ, başın sağında ağ zolaqlar üstündə qara stat
-   - `template_ru3.png`, `template_ru4.png` — rusca statlar, template3/4-ün
+   - `template1.png` — AZ, dırnaqlar arasında sol tərəfdə stat
+   - `template2.png` — AZ, yuxarıdakı düzbucaqlı daxilində stat
+   - `template3.png` — AZ, mavi-yaşıl qutuda kiçik hərflərlə stat
+   - `template4.png` — AZ, tünd yaşıl ləkədə dırnaq ilə xətt arasında stat
+   - `template5.png` — AZ, başın sağında ağ zolaqlar üstündə qara stat
+   - `template_ru1.png`, `template_ru2.png` — rusca statlar, template1/4-ün
      rusca versiyaları, gün-gün növbə ilə
 
-   Gündəlik paketdə AZ statları gün-gün növbələşir: template3 → 4 → 5 → 6 → 7.
+   Gündəlik paketdə AZ statları gün-gün növbələşir: template1 → 2 → 3 → 4 → 5.
    Mətnin yeri, ölçüsü
    və rəngləri `data/templates/template_config.json`-da tənzimlənir
-   (`az3`–`az7`, `ru3`, `ru4` açarları). Bütün sətirlər eyni ölçüdə yazılır;
-   template3/4-də 2-ci sətir vurğu rəngi ilə.
+   (`az1`–`az3`, `ru1`, `ru2` açarları). Bütün sətirlər eyni ölçüdə yazılır;
+   template1/2-də 2-ci sətir vurğu rəngi ilə.
 
 7. İşə sal:
    ```
@@ -57,8 +57,8 @@ Telegram-da botuna yaz:
 |---|---|
 | `/yeni` | 16 mövzudan biri seçilir, sonra şablon (növbə ilə / 3 / 4 / 5 / 6 / 7 / 1) |
 | `/yeni yay endirimi` | Verilən mövzuda post hazırlayır (şablon seçimi ilə) |
-| `/rusca` | Rusca stat postu, şablon növbə ilə ru3 ↔ ru4 |
-| `/gundelik` | Günün paketi (4 AZ + 1 RU), şablon gün-gün 3→4→5→6→7 |
+| `/rusca` | Rusca stat postu, şablon növbə ilə ru1 ↔ ru2 |
+| `/gundelik` | Günün paketi (4 AZ + 1 RU), şablon gün-gün 1→2→3→4→5 |
 | `/siyahi` | Son postlar və statusları |
 
 Hər postun altında düymələr: **✅ Təsdiq** / **🔄 Yenidən** / **❌ Rədd et**.

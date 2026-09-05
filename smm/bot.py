@@ -2,13 +2,13 @@
 
 Əmrlər:
   /yeni [mövzu]  - yeni stat postu yarat (mövzu və şablon seçimi ilə)
-  /rusca [mövzu] - rusca stat postu (şablon növbə ilə: ru3 ↔ ru4)
+  /rusca [mövzu] - rusca stat postu (şablon növbə ilə: ru1 ↔ ru2)
   /gundelik      - günün post paketini indi hazırla (2 ümumi + 2 enerji + 1 rus)
 
 Şablonlar: gündəlik paketdə AZ statları gün-gün növbələşir — bir gün hamısı
-template3, sonra 4, 5, 6, 7, yenidən 3 (soruşulmur).
-/yeni ilə tək post yaradanda şablon soruşulur. Rusca statlar template_ru3 və
-template_ru4 (AZ 3/4-ün rusca versiyaları) arasında gün-gün növbələşir.
+template1, sonra 2, 3, 4, 5, yenidən 1 (soruşulmur).
+/yeni ilə tək post yaradanda şablon soruşulur. Rusca statlar template_ru1 və
+template_ru2 (AZ 1/2-nin rusca versiyaları) arasında gün-gün növbələşir.
   /siyahi        - son postlar və statusları
   /yardim        - əmrlərin siyahısı
 
@@ -50,49 +50,59 @@ STATUS_LABELS = {
 _notified_model: str | None = None
 
 # Şablonlar (template_config.json açarları)
-TPL_AZ3, TPL_AZ4, TPL_AZ5, TPL_AZ6, TPL_AZ7 = "az3", "az4", "az5", "az6", "az7"
-TPL_RU3, TPL_RU4 = "ru3", "ru4"
-# Köhnə postlarda saxlanmış "az" (template1) və "ru" (template2) açarları artıq
-# istifadə olunmur — belə postun "Yenidən"/"Əlavə" düyməsində şablon növbədən götürülür.
-LEGACY_AZ_TEMPLATES = {"az", None, ""}
-LEGACY_RU_TEMPLATE = "ru"
-# AZ statları növbə ilə 3 → 4 → 5 → 6 → 7 → 3 ...
-AZ_TEMPLATE_ROTATION = [TPL_AZ3, TPL_AZ4, TPL_AZ5, TPL_AZ6, TPL_AZ7]
-# RU statları növbə ilə ru3 ↔ ru4 (AZ 3 və 4-ün rusca versiyaları)
-RU_TEMPLATE_ROTATION = [TPL_RU3, TPL_RU4]
+TPL_AZ1, TPL_AZ2, TPL_AZ3, TPL_AZ4, TPL_AZ5 = "az1", "az2", "az3", "az4", "az5"
+TPL_RU1, TPL_RU2 = "ru1", "ru2"
+# Köhnə postlarda saxlanmış, artıq mövcud olmayan şablon açarları ("az", "ru",
+# köhnə nömrələmə) — belə postun "Yenidən"/"Əlavə" düyməsində şablon növbədən götürülür.
+# AZ statları növbə ilə 1 → 2 → 3 → 4 → 5 → 1 ...
+AZ_TEMPLATE_ROTATION = [TPL_AZ1, TPL_AZ2, TPL_AZ3, TPL_AZ4, TPL_AZ5]
+# RU statları növbə ilə ru1 ↔ ru2 (AZ 1 və 2-nin rusca versiyaları)
+RU_TEMPLATE_ROTATION = [TPL_RU1, TPL_RU2]
 # Sayğaclar: az_tpl_idx / ru_tpl_idx — tək postlar (post-post),
 #            az_daily_tpl_idx / ru_daily_tpl_idx — gündəlik paket (gün-gün)
 TEMPLATE_LABELS = {
+    TPL_AZ1: "1️⃣ Template 1",
+    TPL_AZ2: "2️⃣ Template 2",
     TPL_AZ3: "3️⃣ Template 3",
     TPL_AZ4: "4️⃣ Template 4",
     TPL_AZ5: "5️⃣ Template 5",
-    TPL_AZ6: "6️⃣ Template 6",
-    TPL_AZ7: "7️⃣ Template 7",
 }
 
 
 def _next_az_template() -> str:
-    """Tək AZ postu üçün növbəti şablon (3→4→5→6→7, sayğac bazada saxlanılır)."""
+    """Tək AZ postu üçün növbəti şablon (1→2→3→4→5, sayğac bazada saxlanılır)."""
     return _rotate(AZ_TEMPLATE_ROTATION, "az_tpl_idx", 1)[0]
 
 
 def _next_daily_template() -> str:
-    """Günün paketi üçün AZ şablonu: gün-gün 3 → 4 → 5 → 6 → 7 → 3 ..."""
+    """Günün paketi üçün AZ şablonu: gün-gün 1 → 2 → 3 → 4 → 5 → 1 ..."""
     return _rotate(AZ_TEMPLATE_ROTATION, "az_daily_tpl_idx", 1)[0]
 
 
 def _next_ru_template() -> str:
-    """Tək rusca post üçün növbəti şablon (ru3 ↔ ru4)."""
+    """Tək rusca post üçün növbəti şablon (ru1 ↔ ru2)."""
     return _rotate(RU_TEMPLATE_ROTATION, "ru_tpl_idx", 1)[0]
 
 
 def _next_daily_ru_template() -> str:
-    """Günün paketindəki rusca post üçün şablon: bir gün ru3, növbəti gün ru4."""
+    """Günün paketindəki rusca post üçün şablon: bir gün ru1, növbəti gün ru2."""
     return _rotate(RU_TEMPLATE_ROTATION, "ru_daily_tpl_idx", 1)[0]
 
 
 def _is_ru_template(template: str | None) -> bool:
     return bool(template) and template.startswith("ru")
+
+
+def _resolve_template(template: str | None) -> str:
+    """Bazadakı şablon açarını mövcud şablona çevirir.
+
+    Köhnə/mövcud olmayan açar ("az", "ru", köhnə nömrələmə) gələrsə dilə
+    uyğun növbədən şablon götürülür.
+    """
+    known = set(AZ_TEMPLATE_ROTATION) | set(RU_TEMPLATE_ROTATION)
+    if template in known:
+        return template
+    return _next_ru_template() if _is_ru_template(template) else _next_az_template()
 
 
 # Tək-tək post yaratmaq üçün mövzu seçimləri (/yeni və /rusca menyusu).
@@ -227,18 +237,18 @@ def _topic_keyboard(lang: str) -> InlineKeyboardMarkup:
 def _template_keyboard(prefix: str) -> InlineKeyboardMarkup:
     """Şablon seçimi düymələri (/yeni menyusu). prefix: 'tplaz:<topic_key>'."""
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔁 Növbə ilə (3→4→5→6→7)",
+        [InlineKeyboardButton("🔁 Növbə ilə (1→2→3→4→5)",
                               callback_data=f"{prefix}:auto")],
+        [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ1],
+                              callback_data=f"{prefix}:{TPL_AZ1}"),
+         InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ2],
+                              callback_data=f"{prefix}:{TPL_AZ2}")],
         [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ3],
                               callback_data=f"{prefix}:{TPL_AZ3}"),
          InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ4],
                               callback_data=f"{prefix}:{TPL_AZ4}")],
         [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ5],
-                              callback_data=f"{prefix}:{TPL_AZ5}"),
-         InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ6],
-                              callback_data=f"{prefix}:{TPL_AZ6}")],
-        [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ7],
-                              callback_data=f"{prefix}:{TPL_AZ7}")],
+                              callback_data=f"{prefix}:{TPL_AZ5}")],
     ])
 
 
@@ -324,7 +334,7 @@ async def _send_daily_batch(bot: Bot, chat_id: int):
     statında "çakra" sözü mütləq keçir.
 
     Şablon soruşulmur: günün bütün AZ statları eyni şablondadır, gün-gün
-    3 → 4 → 5 → 6 → 7 → 3 növbəsi ilə. Rusca stat ru3 ↔ ru4 gün-gün növbəsi ilə.
+    1 → 2 → 3 → 4 → 5 → 1 növbəsi ilə. Rusca stat ru1 ↔ ru2 gün-gün növbəsi ilə.
     """
     total = DAILY_POST_COUNT + 1
     daily_topics = _pick_daily_topics()
@@ -391,7 +401,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Salam! Mən sənin SMM köməkçinəm. 🤖\n\n"
         "/yeni [mövzu] — yeni stat postu yarat (AZ, şablon seçimi ilə)\n"
         "/rusca [mövzu] — rus dilində stat postu yarat 🇷🇺\n"
-        "/gundelik — günün paketini indi hazırla (4 AZ + 1 RU, şablon gün-gün 3→4→5→6→7)\n"
+        "/gundelik — günün paketini indi hazırla (4 AZ + 1 RU, şablon gün-gün 1→2→3→4→5)\n"
         "/siyahi — son postlara bax\n\n"
         f"Hər gün saat {config.DAILY_POST_TIME}-da avtomatik günün paketini "
         "hazırlayacağam."
@@ -403,8 +413,8 @@ async def _generate_and_send(bot: Bot, chat_id: int, note_msg,
                              template: str | None = None):
     """Verilən dildə/mövzuda post yaradıb göndərir; note_msg silinir.
 
-    template: AZ üçün şablon açarı; None olsa növbə ilə (3→4→5→6→7).
-    Rusca post ru3 ↔ ru4 növbəsi ilə yaradılır.
+    template: AZ üçün şablon açarı; None olsa növbə ilə (1→2→3→4→5).
+    Rusca post ru1 ↔ ru2 növbəsi ilə yaradılır.
     """
     try:
         if lang == "ru":
@@ -502,7 +512,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             context.bot, query.message.chat_id, note, topic, "az", template)
         return
 
-    # /rusca menyusu: mövzu seçildi → ru3/ru4 növbəsi ilə post hazırlanır
+    # /rusca menyusu: mövzu seçildi → ru1/ru2 növbəsi ilə post hazırlanır
     if action == "newru":
         topic = TOPIC_CHOICES.get(payload)  # "auto" üçün None qalır
         note = await query.message.edit_text(
@@ -532,11 +542,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             content = await asyncio.to_thread(
                 brain.generate_post, old["idea"], [old["image_headline"]])
-            template = old["image_subtext"]
-            if template in LEGACY_AZ_TEMPLATES:
-                template = _next_az_template()
-            elif template == LEGACY_RU_TEMPLATE:
-                template = _next_ru_template()
+            template = _resolve_template(old["image_subtext"])
             if _is_ru_template(template):
                 content = await asyncio.to_thread(
                     brain.make_russian_version, [content.quote])
@@ -557,11 +563,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Eyni mövzuda, amma köhnə statdan fərqli yeni stat
             content = await asyncio.to_thread(
                 brain.generate_post, old["idea"], [old["image_headline"]])
-            template = old["image_subtext"]
-            if template in LEGACY_AZ_TEMPLATES:
-                template = _next_az_template()
-            elif template == LEGACY_RU_TEMPLATE:
-                template = _next_ru_template()
+            template = _resolve_template(old["image_subtext"])
             if _is_ru_template(template):
                 content = await asyncio.to_thread(
                     brain.make_russian_version, [content.quote])

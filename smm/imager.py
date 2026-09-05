@@ -5,13 +5,13 @@ təyin olunur) böyük hərflərlə, Montserrat ExtraBold şrifti ilə yazılır
 Mətn uzun olduqda şrift ölçüsü avtomatik kiçilir ki, sahəyə sığsın;
 bütün sətirlər EYNİ ölçüdə olur.
 
-Şablonlar: az3 (template3, sol tərəfdə
-dırnaqlar arasında), az4 (template4, yuxarıdakı düzbucaqlı daxilində),
-az5 (template5, mavi-yaşıl qutuda, kiçik hərflərlə), az6 (template6, tünd
-yaşıl ləkədə dırnaq ilə narıncı xətt arasında), az7 (template7, başın sağında
-hər sətrin arxasında ağ zolaq, qara yazı). az5/az6/az7-də mətn sahəsi
+Şablonlar: az1 (template1, sol tərəfdə
+dırnaqlar arasında), az2 (template2, yuxarıdakı düzbucaqlı daxilində),
+az3 (template3, mavi-yaşıl qutuda, kiçik hərflərlə), az4 (template4, tünd
+yaşıl ləkədə dırnaq ilə narıncı xətt arasında), az5 (template5, başın sağında
+hər sətrin arxasında ağ zolaq, qara yazı). az3/az4/az5-də mətn sahəsi
 mütəxəssisin şəklinə toxunmayacaq şəkildə məhdudlaşdırılıb.
-ru3/ru4 — template3/4-ün rusca versiyaları (eyni mətn sahəsi, lang = ru).
+ru1/ru2 — template1/2-nin rusca versiyaları (eyni mətn sahəsi, lang = ru).
 "quote" blokunda line_bg = sətir arxası zolağın rəngi (bg_pad_x, bg_gap ilə).
 "quote" blokunda: align = "center" | "left"; accent_line = rənglənən sətrin
 indeksi (nümunədəki kimi 2-ci sətir vurğu rəngi ilə), accent_color = həmin rəng.
@@ -105,10 +105,10 @@ def prune_old_outputs(days: int | None = None) -> int:
     return removed
 
 
-def render_post_image(quote: str, template: str = "az3") -> str:
+def render_post_image(quote: str, template: str = "az1") -> str:
     """Statı şablon üzərinə yazıb hazır şəklin yolunu qaytarır.
 
-    template: template_config.json-dakı açar ("az3" … "az7", "ru3", "ru4").
+    template: template_config.json-dakı açar ("az1" … "az5", "ru1", "ru2").
     """
     cfg = _load_template_config(template)
     spec = cfg["quote"]
@@ -134,7 +134,7 @@ def render_post_image(quote: str, template: str = "az3") -> str:
     align = spec.get("align", "center")
     accent_line = spec.get("accent_line")
     accent_color = spec.get("accent_color", spec["color"])
-    # line_bg: hər sətrin arxasına rəngli zolaq (template7 — ağ fon üstündə qara yazı)
+    # line_bg: hər sətrin arxasına rəngli zolaq (template5 — ağ fon üstündə qara yazı)
     line_bg = spec.get("line_bg")
     bg_pad_x = spec.get("bg_pad_x", 16)
     bg_gap = spec.get("bg_gap", 10)          # zolaqlar arasındakı boşluq
