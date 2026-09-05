@@ -39,6 +39,8 @@ DEFAULT_FILES = [
     "data/templates/template2.png",
     "data/templates/template3.png",
     "data/templates/template4.png",
+    "data/templates/template5.png",
+    "data/templates/template6.png",
     "data/templates/fonts/Montserrat-ExtraBold.ttf",
 ]
 

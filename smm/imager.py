@@ -6,7 +6,10 @@ Mətn uzun olduqda şrift ölçüsü avtomatik kiçilir ki, sahəyə sığsın;
 bütün sətirlər EYNİ ölçüdə olur.
 
 Şablonlar: az (template1), ru (template2), az3 (template3, sol tərəfdə
-dırnaqlar arasında), az4 (template4, yuxarıdakı düzbucaqlı daxilində).
+dırnaqlar arasında), az4 (template4, yuxarıdakı düzbucaqlı daxilində),
+az5 (template5, mavi-yaşıl qutuda, kiçik hərflərlə), az6 (template6, tünd
+yaşıl ləkədə dırnaq ilə narıncı xətt arasında). az5/az6-da mətn sahəsi
+mütəxəssisin şəklinə toxunmayacaq şəkildə daraldılıb.
 "quote" blokunda: align = "center" | "left"; accent_line = rənglənən sətrin
 indeksi (nümunədəki kimi 2-ci sətir vurğu rəngi ilə), accent_color = həmin rəng.
 """
