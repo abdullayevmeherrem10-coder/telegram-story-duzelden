@@ -6,7 +6,7 @@
   /gundelik      - günün post paketini indi hazırla (2 ümumi + 2 enerji + 1 rus)
 
 Şablonlar: gündəlik paketdə AZ statları gün-gün növbələşir — bir gün hamısı
-template3, sonra 4, 5, 6, yenidən 3 (soruşulmur). Hər
+template3, sonra 4, 5, 6, 7, yenidən 3 (soruşulmur). Hər
 TEMPLATE1_EVERY_N_DAYS-cı gün bütün paket template1-də olur.
 /yeni ilə tək post yaradanda şablon soruşulur. Rusca statlar həmişə template2-dədir.
   /siyahi        - son postlar və statusları
@@ -50,10 +50,10 @@ STATUS_LABELS = {
 _notified_model: str | None = None
 
 # Şablonlar (template_config.json açarları)
-TPL_AZ1, TPL_AZ3, TPL_AZ4, TPL_AZ5, TPL_AZ6, TPL_RU = (
-    "az", "az3", "az4", "az5", "az6", "ru")
-# AZ statları növbə ilə 3 → 4 → 5 → 6 → 3 ...
-AZ_TEMPLATE_ROTATION = [TPL_AZ3, TPL_AZ4, TPL_AZ5, TPL_AZ6]
+TPL_AZ1, TPL_AZ3, TPL_AZ4, TPL_AZ5, TPL_AZ6, TPL_AZ7, TPL_RU = (
+    "az", "az3", "az4", "az5", "az6", "az7", "ru")
+# AZ statları növbə ilə 3 → 4 → 5 → 6 → 7 → 3 ...
+AZ_TEMPLATE_ROTATION = [TPL_AZ3, TPL_AZ4, TPL_AZ5, TPL_AZ6, TPL_AZ7]
 # Sayğaclar: az_tpl_idx — /yeni tək postlar (post-post), az_daily_tpl_idx — gündəlik (gün-gün)
 TEMPLATE1_EVERY_N_DAYS = 10                 # hər 10-cu gün bütün paket template1
 TEMPLATE_LABELS = {
@@ -61,17 +61,18 @@ TEMPLATE_LABELS = {
     TPL_AZ4: "4️⃣ Template 4",
     TPL_AZ5: "5️⃣ Template 5",
     TPL_AZ6: "6️⃣ Template 6",
+    TPL_AZ7: "7️⃣ Template 7",
     TPL_AZ1: "1️⃣ Template 1",
 }
 
 
 def _next_az_template() -> str:
-    """Tək AZ postu üçün növbəti şablon (3→4→5→6, sayğac bazada saxlanılır)."""
+    """Tək AZ postu üçün növbəti şablon (3→4→5→6→7, sayğac bazada saxlanılır)."""
     return _rotate(AZ_TEMPLATE_ROTATION, "az_tpl_idx", 1)[0]
 
 
 def _next_daily_template() -> str:
-    """Günün paketi üçün şablon: gün-gün 3 → 4 → 5 → 6 → 3 ..."""
+    """Günün paketi üçün şablon: gün-gün 3 → 4 → 5 → 6 → 7 → 3 ..."""
     return _rotate(AZ_TEMPLATE_ROTATION, "az_daily_tpl_idx", 1)[0]
 
 
@@ -207,7 +208,7 @@ def _topic_keyboard(lang: str) -> InlineKeyboardMarkup:
 def _template_keyboard(prefix: str) -> InlineKeyboardMarkup:
     """Şablon seçimi düymələri (/yeni menyusu). prefix: 'tplaz:<topic_key>'."""
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔁 Növbə ilə (3→4→5→6)",
+        [InlineKeyboardButton("🔁 Növbə ilə (3→4→5→6→7)",
                               callback_data=f"{prefix}:auto")],
         [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ3],
                               callback_data=f"{prefix}:{TPL_AZ3}"),
@@ -217,7 +218,9 @@ def _template_keyboard(prefix: str) -> InlineKeyboardMarkup:
                               callback_data=f"{prefix}:{TPL_AZ5}"),
          InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ6],
                               callback_data=f"{prefix}:{TPL_AZ6}")],
-        [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ1],
+        [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ7],
+                              callback_data=f"{prefix}:{TPL_AZ7}"),
+         InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ1],
                               callback_data=f"{prefix}:{TPL_AZ1}")],
     ])
 
@@ -304,7 +307,7 @@ async def _send_daily_batch(bot: Bot, chat_id: int):
     statında "çakra" sözü mütləq keçir.
 
     Şablon soruşulmur: günün bütün AZ statları eyni şablondadır, gün-gün
-    3 → 4 → 5 → 6 → 3 növbəsi ilə. Hər TEMPLATE1_EVERY_N_DAYS-cı gün bütün
+    3 → 4 → 5 → 6 → 7 → 3 növbəsi ilə. Hər TEMPLATE1_EVERY_N_DAYS-cı gün bütün
     paket template1-də olur. Rusca stat həmişə template2-dədir.
     """
     total = DAILY_POST_COUNT + 1
@@ -312,7 +315,7 @@ async def _send_daily_batch(bot: Bot, chat_id: int):
 
     daily_no = int(db.get_state("daily_no", "0")) + 1
     db.set_state("daily_no", str(daily_no))
-    # Hər 10-cu gün bütün paket template1-də; digər günlər 3→4→5→6 növbəsi
+    # Hər 10-cu gün bütün paket template1-də; digər günlər 3→4→5→6→7 növbəsi
     if daily_no % TEMPLATE1_EVERY_N_DAYS == 0:
         day_template = TPL_AZ1
         tpl_note = f"şablon: {TEMPLATE_LABELS[TPL_AZ1]} (10 günlük növbə)"
@@ -377,7 +380,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Salam! Mən sənin SMM köməkçinəm. 🤖\n\n"
         "/yeni [mövzu] — yeni stat postu yarat (AZ, şablon seçimi ilə)\n"
         "/rusca [mövzu] — rus dilində stat postu yarat 🇷🇺\n"
-        "/gundelik — günün paketini indi hazırla (4 AZ + 1 RU, şablon gün-gün 3→4→5→6)\n"
+        "/gundelik — günün paketini indi hazırla (4 AZ + 1 RU, şablon gün-gün 3→4→5→6→7)\n"
         "/siyahi — son postlara bax\n\n"
         f"Hər gün saat {config.DAILY_POST_TIME}-da avtomatik günün paketini "
         "hazırlayacağam."
@@ -389,7 +392,7 @@ async def _generate_and_send(bot: Bot, chat_id: int, note_msg,
                              template: str | None = None):
     """Verilən dildə/mövzuda post yaradıb göndərir; note_msg silinir.
 
-    template: AZ üçün şablon açarı; None olsa növbə ilə (3→4→5→6).
+    template: AZ üçün şablon açarı; None olsa növbə ilə (3→4→5→6→7).
     Rusca post həmişə template2 ("ru") ilə yaradılır.
     """
     try:

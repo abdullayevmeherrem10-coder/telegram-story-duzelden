@@ -8,8 +8,10 @@ bütün sətirlər EYNİ ölçüdə olur.
 Şablonlar: az (template1), ru (template2), az3 (template3, sol tərəfdə
 dırnaqlar arasında), az4 (template4, yuxarıdakı düzbucaqlı daxilində),
 az5 (template5, mavi-yaşıl qutuda, kiçik hərflərlə), az6 (template6, tünd
-yaşıl ləkədə dırnaq ilə narıncı xətt arasında). az5/az6-da mətn sahəsi
-mütəxəssisin şəklinə toxunmayacaq şəkildə daraldılıb.
+yaşıl ləkədə dırnaq ilə narıncı xətt arasında), az7 (template7, başın sağında
+hər sətrin arxasında ağ zolaq, qara yazı). az5/az6/az7-də mətn sahəsi
+mütəxəssisin şəklinə toxunmayacaq şəkildə məhdudlaşdırılıb.
+"quote" blokunda line_bg = sətir arxası zolağın rəngi (bg_pad_x, bg_gap ilə).
 "quote" blokunda: align = "center" | "left"; accent_line = rənglənən sətrin
 indeksi (nümunədəki kimi 2-ci sətir vurğu rəngi ilə), accent_color = həmin rəng.
 """
@@ -131,16 +133,29 @@ def render_post_image(quote: str, template: str = "az") -> str:
     align = spec.get("align", "center")
     accent_line = spec.get("accent_line")
     accent_color = spec.get("accent_color", spec["color"])
+    # line_bg: hər sətrin arxasına rəngli zolaq (template7 — ağ fon üstündə qara yazı)
+    line_bg = spec.get("line_bg")
+    bg_pad_x = spec.get("bg_pad_x", 16)
+    bg_gap = spec.get("bg_gap", 10)          # zolaqlar arasındakı boşluq
+    ascent, descent = font.getmetrics()
+    # Zolaq daxilində mətni şaquli mərkəzləşdirmək üçün sürüşmə
+    text_dy = max(0, (line_height - (ascent + descent)) // 2) if line_bg else 0
 
     for i, line in enumerate(lines):
+        w = draw.textlength(line, font=font)
         if align == "left":
             x = spec["left_x"]
         else:
-            x = spec["center_x"] - draw.textlength(line, font=font) / 2
+            x = spec["center_x"] - w / 2
+        if line_bg:
+            draw.rectangle(
+                [x - bg_pad_x, y + bg_gap // 2,
+                 x + w + bg_pad_x, y + line_height - bg_gap // 2],
+                fill=line_bg)
         # Vurğu sətri yalnız çoxsətirli statda (tək sətir əsas rəngdə qalır)
         color = accent_color if (accent_line is not None and len(lines) > 1
                                  and i == accent_line) else spec["color"]
-        draw.text((x, y), line, font=font, fill=color)
+        draw.text((x, y + text_dy), line, font=font, fill=color)
         y += line_height
 
     out_path = config.OUTPUT_DIR / f"post_{template}_{int(time.time() * 1000)}.png"

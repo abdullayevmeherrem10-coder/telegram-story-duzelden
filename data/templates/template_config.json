@@ -131,5 +131,30 @@
       "max_lines": 6,
       "line_spacing": 1.2
     }
+  },
+  "az7": {
+    "file": "template7.png",
+    "lang": "az",
+    "size": [
+      1080,
+      1080
+    ],
+    "font": "fonts/Montserrat-ExtraBold.ttf",
+    "quote": {
+      "color": "#000000",
+      "line_bg": "#ffffff",
+      "bg_pad_x": 18,
+      "bg_gap": 12,
+      "uppercase": false,
+      "align": "left",
+      "left_x": 600,
+      "box_top": 240,
+      "box_bottom": 626,
+      "max_width": 435,
+      "base_size": 60,
+      "min_size": 26,
+      "max_lines": 5,
+      "line_spacing": 1.3
+    }
   }
 }

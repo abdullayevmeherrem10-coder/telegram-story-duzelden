@@ -36,11 +36,12 @@ Anthropic Claude. `.env`-də `AI_PROVIDER` ilə seçilir.
    - `template4.png` — AZ, yuxarıdakı düzbucaqlı daxilində stat
    - `template5.png` — AZ, mavi-yaşıl qutuda kiçik hərflərlə stat
    - `template6.png` — AZ, tünd yaşıl ləkədə dırnaq ilə xətt arasında stat
+   - `template7.png` — AZ, başın sağında ağ zolaqlar üstündə qara stat
 
-   Gündəlik paketdə AZ statları gün-gün növbələşir: template3 → 4 → 5 → 6.
+   Gündəlik paketdə AZ statları gün-gün növbələşir: template3 → 4 → 5 → 6 → 7.
    Mətnin yeri, ölçüsü
    və rəngləri `data/templates/template_config.json`-da tənzimlənir
-   (`az`, `ru`, `az3`–`az6` açarları). Bütün sətirlər eyni ölçüdə yazılır;
+   (`az`, `ru`, `az3`–`az7` açarları). Bütün sətirlər eyni ölçüdə yazılır;
    template3/4-də 2-ci sətir vurğu rəngi ilə.
 
 7. İşə sal:
@@ -54,10 +55,10 @@ Telegram-da botuna yaz:
 
 | Əmr | Nə edir |
 |---|---|
-| `/yeni` | 16 mövzudan biri seçilir, sonra şablon (növbə ilə / 3 / 4 / 5 / 6 / 1) |
+| `/yeni` | 16 mövzudan biri seçilir, sonra şablon (növbə ilə / 3 / 4 / 5 / 6 / 7 / 1) |
 | `/yeni yay endirimi` | Verilən mövzuda post hazırlayır (şablon seçimi ilə) |
 | `/rusca` | Rusca stat postu, həmişə template2 |
-| `/gundelik` | Günün paketi (4 AZ + 1 RU), şablon gün-gün 3→4→5→6 |
+| `/gundelik` | Günün paketi (4 AZ + 1 RU), şablon gün-gün 3→4→5→6→7 |
 | `/siyahi` | Son postlar və statusları |
 
 Hər postun altında düymələr: **✅ Təsdiq** / **🔄 Yenidən** / **❌ Rədd et**.
