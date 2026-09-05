@@ -1,8 +1,14 @@
 """Şəkil modulu — Canva şablonu üzərinə statı (aforizmi) yazır.
 
-Stat şablonun yuxarı hissəsindəki boş sahəyə (başın üzərinə) mərkəzləşdirilmiş,
-böyük hərflərlə, Montserrat ExtraBold şrifti ilə yazılır. Mətn uzun olduqda
-şrift ölçüsü avtomatik kiçilir ki, sahəyə sığsın.
+Stat şablonun boş sahəsinə (template_config.json-da "quote" bloku ilə
+təyin olunur) böyük hərflərlə, Montserrat ExtraBold şrifti ilə yazılır.
+Mətn uzun olduqda şrift ölçüsü avtomatik kiçilir ki, sahəyə sığsın;
+bütün sətirlər EYNİ ölçüdə olur.
+
+Şablonlar: az (template1), ru (template2), az3 (template3, sol tərəfdə
+dırnaqlar arasında), az4 (template4, yuxarıdakı düzbucaqlı daxilində).
+"quote" blokunda: align = "center" | "left"; accent_line = rənglənən sətrin
+indeksi (nümunədəki kimi 2-ci sətir vurğu rəngi ilə), accent_color = həmin rəng.
 """
 import json
 import logging
@@ -96,11 +102,12 @@ def prune_old_outputs(days: int | None = None) -> int:
 def render_post_image(quote: str, template: str = "az") -> str:
     """Statı şablon üzərinə yazıb hazır şəklin yolunu qaytarır.
 
-    template: "az" (template1) və ya "ru" (template2).
+    template: template_config.json-dakı açar ("az", "ru", "az3", "az4").
     """
     cfg = _load_template_config(template)
     spec = cfg["quote"]
     size = tuple(cfg.get("size", [1080, 1080]))
+    lang = cfg.get("lang", "ru" if template == "ru" else "az")
 
     img = Image.open(config.TEMPLATES_DIR / cfg["file"]).convert("RGB")
     if img.size != size:
@@ -109,7 +116,7 @@ def render_post_image(quote: str, template: str = "az") -> str:
 
     text = quote.strip().rstrip(".")
     if spec.get("uppercase", True):
-        text = _az_upper(text) if template == "az" else text.upper()
+        text = _az_upper(text) if lang == "az" else text.upper()
 
     font_path = str(config.TEMPLATES_DIR / cfg["font"])
     font, lines, line_height = _fit_text(draw, text, font_path, spec)
@@ -118,10 +125,19 @@ def render_post_image(quote: str, template: str = "az") -> str:
     total_height = line_height * len(lines)
     y = spec["box_top"] + (spec["box_bottom"] - spec["box_top"] - total_height) // 2
 
-    for line in lines:
-        w = draw.textlength(line, font=font)
-        draw.text((spec["center_x"] - w / 2, y), line,
-                  font=font, fill=spec["color"])
+    align = spec.get("align", "center")
+    accent_line = spec.get("accent_line")
+    accent_color = spec.get("accent_color", spec["color"])
+
+    for i, line in enumerate(lines):
+        if align == "left":
+            x = spec["left_x"]
+        else:
+            x = spec["center_x"] - draw.textlength(line, font=font) / 2
+        # Vurğu sətri yalnız çoxsətirli statda (tək sətir əsas rəngdə qalır)
+        color = accent_color if (accent_line is not None and len(lines) > 1
+                                 and i == accent_line) else spec["color"]
+        draw.text((x, y), line, font=font, fill=color)
         y += line_height
 
     out_path = config.OUTPUT_DIR / f"post_{template}_{int(time.time() * 1000)}.png"

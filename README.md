@@ -29,10 +29,16 @@ Anthropic Claude. `.env`-də `AI_PROVIDER` ilə seçilir.
 5. Brend profilini redaktə et: `data/brand_profile.json` — öz biznesinin
    məlumatlarını yaz (ton, mövzular, hashtag-lar). Bu, sistemin "beynidir".
 
-6. (İstəyə bağlı) Canva şablonunu qoy: Canva-da dizaynını **mətnsiz** PNG kimi
-   eksport et → `data/templates/template1.png` adı ilə saxla. Mətnin yeri/ölçüsü
-   `data/templates/template_config.json`-da tənzimlənir. Şablon olmasa, sadə
-   gradient fon istifadə olunur.
+6. Şablonlar `data/templates/` qovluğundadır (mətnsiz PNG, 1080×1080):
+   - `template1.png` — AZ, hər 10-cu gündəlik paketdə 1 stat
+   - `template2.png` — rusca statlar (həmişə)
+   - `template3.png` — AZ, dırnaqlar arasında sol tərəfdə stat
+   - `template4.png` — AZ, yuxarıdakı düzbucaqlı daxilində stat
+
+   AZ statları template3 ↔ template4 arasında növbələşir. Mətnin yeri, ölçüsü
+   və rəngləri `data/templates/template_config.json`-da tənzimlənir
+   (`az`, `ru`, `az3`, `az4` açarları). Bütün sətirlər eyni ölçüdə yazılır,
+   2-ci sətir vurğu rəngi ilə.
 
 7. İşə sal:
    ```
@@ -45,8 +51,10 @@ Telegram-da botuna yaz:
 
 | Əmr | Nə edir |
 |---|---|
-| `/yeni` | AI mövzu seçib post hazırlayır (şəkil + caption + hashtag) |
-| `/yeni yay endirimi` | Verilən mövzuda post hazırlayır |
+| `/yeni` | 16 mövzudan biri seçilir, sonra şablon (növbə ilə / 3 / 4 / 1) |
+| `/yeni yay endirimi` | Verilən mövzuda post hazırlayır (şablon seçimi ilə) |
+| `/rusca` | Rusca stat postu, həmişə template2 |
+| `/gundelik` | Günün paketi (4 AZ + 1 RU), şablon seçimi ilə |
 | `/siyahi` | Son postlar və statusları |
 
 Hər postun altında düymələr: **✅ Təsdiq** / **🔄 Yenidən** / **❌ Rədd et**.

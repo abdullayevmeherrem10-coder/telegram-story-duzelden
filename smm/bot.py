@@ -1,8 +1,14 @@
 """Telegram bot — stat postlarının yaradılması və təsdiq axını.
 
 Əmrlər:
-  /yeni [mövzu]  - yeni stat postu yarat (mövzu yazılmasa, AI özü seçir)
-  /gundelik      - günün post paketini indi hazırla (2 ümumi + 2 enerji + 1 rus)
+  /yeni [mövzu]  - yeni stat postu yarat (mövzu və şablon seçimi ilə)
+  /rusca [mövzu] - rusca stat postu (həmişə template2)
+  /gundelik      - günün post paketini indi hazırla (2 ümumi + 2 enerji + 1 rus);
+                   şablon seçimi: növbə ilə (3 ↔ 4) və ya konkret şablon
+
+Şablonlar: AZ statları template3 və template4 arasında növbələşir; hər
+TEMPLATE1_EVERY_N_DAYS-cı gündəlik paketdə 1 stat template1-də olur.
+Rusca statlar həmişə template2-dədir.
   /siyahi        - son postlar və statusları
   /yardim        - əmrlərin siyahısı
 
@@ -10,7 +16,6 @@ Hər gün DAILY_POST_TIME vaxtında bot avtomatik günün paketini hazırlayıb
 təsdiq üçün göndərir.
 """
 import asyncio
-import random
 import datetime
 import logging
 from pathlib import Path
@@ -44,33 +49,83 @@ STATUS_LABELS = {
 # Model keçidi barədə sonuncu bildirilən model (təkrar spam olmasın deyə)
 _notified_model: str | None = None
 
-# Tək-tək post yaratmaq üçün mövzu seçimləri
-TOPIC_CHOICES = {
-    "reln": "Qadın və kişi münasibətləri",
-    "family": "Ailədə bərəkət və harmoniya",
-    "energy": "Çakralar, aura və enerji",
+# Şablonlar (template_config.json açarları)
+TPL_AZ1, TPL_AZ3, TPL_AZ4, TPL_RU = "az", "az3", "az4", "ru"
+AZ_TEMPLATE_ROTATION = [TPL_AZ3, TPL_AZ4]   # AZ statları növbə ilə 3 və 4
+TEMPLATE1_EVERY_N_DAYS = 10                 # hər 10-cu gündəlik paketdə 1 stat template1
+TEMPLATE_LABELS = {
+    TPL_AZ3: "3️⃣ Template 3",
+    TPL_AZ4: "4️⃣ Template 4",
+    TPL_AZ1: "1️⃣ Template 1",
 }
 
-# Gündəlik paket: 2 ümumi + 2 enerji statı (sonda 1 rusca versiya).
-# Hər gün ümumi hovuzdan 2, enerji hovuzundan 2 mövzu təsadüfi seçilir.
-# Enerji postlarından biri hər gün konkret bir çakraya (növbə ilə) həsr olunur.
-# Enerji hovuzundakı mövzular (çakra, intuisiya, özünütəlqin, şükür) burada YOXDUR.
-GENERAL_TOPIC_POOL = [
-    "Qadın və kişi münasibətləri, ailə harmoniyası, ailədə bərəkət",
-    "Daxili rahatlıq və mənəvi inkişaf",
-    "İnsan psixologiyası və hisslər",
-    "Münasibətlər",
-    "Şüuraltı",
-    "Tantra yoqa",
-    "Nəfəs texnikaları",
-    "Ruhani oyanış və aydınlanma",
-    "Bolluq və bərəkət enerjisi",
-    "Sevgi enerjisi",
-    "Keçmişi buraxmaq və enerjini yeniləmək",
-    "Təbiətlə enerji balansı",
+
+def _next_az_template() -> str:
+    """AZ statı üçün növbəti şablon (3 ↔ 4, sayğac bazada saxlanılır)."""
+    return _rotate(AZ_TEMPLATE_ROTATION, "az_tpl_idx", 1)[0]
+
+
+# Tək-tək post yaratmaq üçün mövzu seçimləri (/yeni və /rusca menyusu).
+# (açar, düymə yazısı, AI-yə göndərilən tam mövzu) — brand_profile-dakı 16 sütun.
+TOPIC_MENU = [
+    ("reln",     "💑 Qadın-kişi münasibətləri",
+     "Qadın və kişi münasibətləri, ailə harmoniyası, ailədə bərəkət"),
+    ("energy",   "🌀 Çakra, aura, enerji",
+     "Çakralar, aura və enerji"),
+    ("peace",    "🕊 Daxili rahatlıq",
+     "Daxili rahatlıq və mənəvi inkişaf"),
+    ("psych",    "🧠 Psixologiya və hisslər",
+     "İnsan psixologiyası və hisslər"),
+    ("relation", "🤝 Münasibətlər",
+     "Münasibətlər"),
+    ("subcon",   "🌊 Şüuraltı",
+     "Şüuraltı"),
+    ("tantra",   "🧘 Tantra yoqa",
+     "Tantra yoqa"),
+    ("breath",   "🌬 Nəfəs texnikaları",
+     "Nəfəs texnikaları"),
+    ("intuit",   "👁 İntuisiya, bəsirət",
+     "İntuisiya, altıncı hiss və bəsirət"),
+    ("selfsug",  "🗣 Özünütəlqin",
+     "Özünütəlqin"),
+    ("grat",     "🙏 Şükür, yüksək vibrasiya",
+     "Şükür və yüksək vibrasiya"),
+    ("awaken",   "✨ Ruhani oyanış",
+     "Ruhani oyanış və aydınlanma"),
+    ("abund",    "🌾 Bolluq və bərəkət",
+     "Bolluq və bərəkət enerjisi"),
+    ("love",     "❤️ Sevgi enerjisi",
+     "Sevgi enerjisi"),
+    ("release",  "🍂 Keçmişi buraxmaq",
+     "Keçmişi buraxmaq və enerjini yeniləmək"),
+    ("nature",   "🌿 Təbiətlə balans",
+     "Təbiətlə enerji balansı"),
 ]
-ENERGY_TOPIC_POOL = [
-    "Çakralar, aura və enerji",
+TOPIC_CHOICES = {key: topic for key, _label, topic in TOPIC_MENU}
+
+# Gündəlik paket: 2 ümumi + 2 enerji statı (sonda 1 rusca versiya).
+# Ümumi 2 stat: GENERAL_TOPIC_ROTATION-dan NÖVBƏ ilə (16-cı mövzudan 1-ciyə doğru,
+# hər gün növbəti 2 mövzu; siyahı bitəndə əvvəldən başlayır). Bir gündə 2 ümumi
+# stat heç vaxt eyni mövzuda olmur.
+# Enerji 2 stat: biri hər gün 7 çakradan növbətisinə həsr olunur (CHAKRAS),
+# digəri ENERGY_TOPIC_ROTATION-dakı 3 mövzunu növbə ilə gəzir.
+# Növbə sayğacları bazadakı state-də saxlanılır: general_idx, energy_idx, chakra_idx.
+GENERAL_TOPIC_ROTATION = [
+    "Təbiətlə enerji balansı",                                     # 16
+    "Keçmişi buraxmaq və enerjini yeniləmək",                      # 15
+    "Sevgi enerjisi",                                              # 14
+    "Bolluq və bərəkət enerjisi",                                  # 13
+    "Ruhani oyanış və aydınlanma",                                 # 12
+    "Nəfəs texnikaları",                                           # 8
+    "Tantra yoqa",                                                 # 7
+    "Şüuraltı",                                                    # 6
+    "Münasibətlər",                                                # 5
+    "İnsan psixologiyası və hisslər",                              # 4
+    "Daxili rahatlıq və mənəvi inkişaf",                           # 3
+    "Qadın və kişi münasibətləri, ailə harmoniyası, ailədə bərəkət",  # 1
+]
+# "Çakralar, aura və enerji" burada YOXDUR — çakra mövzusunu ayrıca çakra postu örtür.
+ENERGY_TOPIC_ROTATION = [
     "İntuisiya, altıncı hiss və bəsirət",
     "Özünütəlqin",
     "Şükür və yüksək vibrasiya",
@@ -80,11 +135,28 @@ ENERGY_PER_DAY = 2
 DAILY_POST_COUNT = GENERAL_PER_DAY + ENERGY_PER_DAY
 
 
+def _rotate(pool: list[str], state_key: str, count: int) -> list[str]:
+    """pool-dan növbəti `count` mövzunu qaytarır və sayğacı irəli çəkir."""
+    idx = int(db.get_state(state_key, "0")) % len(pool)
+    picked = [pool[(idx + k) % len(pool)] for k in range(count)]
+    db.set_state(state_key, str((idx + count) % len(pool)))
+    return picked
+
+
 def _pick_daily_topics() -> list[str]:
-    """Günün 4 mövzusu: 2 ümumi hovuzdan + 2 enerji hovuzundan (təsadüfi)."""
-    general = random.sample(GENERAL_TOPIC_POOL, GENERAL_PER_DAY)
-    energy = random.sample(ENERGY_TOPIC_POOL, ENERGY_PER_DAY)
-    return general + energy
+    """Günün 4 mövzusu: 2 ümumi (növbə ilə) + 2 enerji.
+
+    Enerji mövzularından biri növbəti çakra postu üçün yer tutur (mətn
+    _send_daily_batch-də CHAKRAS-dan gəlir), digəri 4 enerji mövzusundan
+    növbətisidir (3 mövzu). Çakra postunun yeri hər gün 3-cü/4-cü olaraq dəyişir.
+    """
+    general = _rotate(GENERAL_TOPIC_ROTATION, "general_idx", GENERAL_PER_DAY)
+    energy = _rotate(ENERGY_TOPIC_ROTATION, "energy_idx", 1)
+    chakra_idx = int(db.get_state("chakra_idx", "0"))
+    chakra_slot = ["<çakra>"]
+    if chakra_idx % 2 == 0:
+        return general + chakra_slot + energy   # çakra 3-cü
+    return general + energy + chakra_slot       # çakra 4-cü
 
 
 # 7 çakra — gün-gün növbə ilə fırlanır (növbə bazadakı state-də saxlanılır)
@@ -112,17 +184,27 @@ def _is_admin(update: Update) -> bool:
 
 
 def _topic_keyboard(lang: str) -> InlineKeyboardMarkup:
-    """Mövzu seçimi düymələri. lang: 'az' -> newaz, 'ru' -> newru."""
+    """Mövzu seçimi düymələri (16 mövzu, 2 sütun). lang: 'az' -> newaz, 'ru' -> newru."""
     prefix = f"new{lang}"
+    buttons = [InlineKeyboardButton(label, callback_data=f"{prefix}:{key}")
+               for key, label, _topic in TOPIC_MENU]
+    rows = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+    rows.append([InlineKeyboardButton("🎲 AI özü seçsin",
+                                      callback_data=f"{prefix}:auto")])
+    return InlineKeyboardMarkup(rows)
+
+
+def _template_keyboard(prefix: str) -> InlineKeyboardMarkup:
+    """Şablon seçimi düymələri. prefix: 'tplaz:<topic_key>' və ya 'daily'."""
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("💑 Qadın-kişi münasibətləri",
-                              callback_data=f"{prefix}:reln")],
-        [InlineKeyboardButton("🏠 Ailədə bərəkət",
-                              callback_data=f"{prefix}:family")],
-        [InlineKeyboardButton("🌀 Çakra, aura, enerji",
-                              callback_data=f"{prefix}:energy")],
-        [InlineKeyboardButton("🎲 AI özü seçsin",
+        [InlineKeyboardButton("🔁 Növbə ilə (3 ↔ 4)",
                               callback_data=f"{prefix}:auto")],
+        [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ3],
+                              callback_data=f"{prefix}:{TPL_AZ3}"),
+         InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ4],
+                              callback_data=f"{prefix}:{TPL_AZ4}")],
+        [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ1],
+                              callback_data=f"{prefix}:{TPL_AZ1}")],
     ])
 
 
@@ -155,7 +237,7 @@ def _save_post(content: brain.PostContent, template: str) -> int:
 def _create_post(topic: str | None = None,
                  avoid_ideas: list[str] | None = None) -> int:
     content = brain.generate_post(topic, avoid_ideas)
-    return _save_post(content, template="az")
+    return _save_post(content, template=_next_az_template())
 
 
 async def _notify_model_switch(bot: Bot, chat_id: int):
@@ -199,17 +281,37 @@ async def _send_post(bot: Bot, chat_id: int, post_id: int, prefix: str = ""):
         )
 
 
-async def _send_daily_batch(bot: Bot, chat_id: int):
+async def _send_daily_batch(bot: Bot, chat_id: int,
+                            template: str | None = None):
     """Günün paketi: 2 ümumi + 2 enerji statı (AZ) + 1 rusca versiya.
 
-    Ümumi statlar GENERAL_TOPIC_POOL-dan, enerji statları ENERGY_TOPIC_POOL-dan
-    təsadüfi seçilir. Enerji postlarından biri (gah 3-cü, gah 4-cü) hər gün
-    7 çakradan növbətisinə həsr olunur — statında "çakra" sözü mütləq keçir.
+    Ümumi statlar GENERAL_TOPIC_ROTATION-dan, enerji statı ENERGY_TOPIC_ROTATION-dan
+    növbə ilə seçilir (bax _pick_daily_topics). Enerji postlarından biri
+    (gah 3-cü, gah 4-cü) hər gün 7 çakradan növbətisinə həsr olunur —
+    statında "çakra" sözü mütləq keçir.
+
+    template: None — AZ statları template3/4 arasında növbə ilə; hər
+    TEMPLATE1_EVERY_N_DAYS-cı paketdə 1-ci stat template1-də olur.
+    Konkret açar ("az3", "az4", "az") verilsə bütün AZ statları onda olur.
+    Rusca stat həmişə template2-dədir.
     """
     total = DAILY_POST_COUNT + 1
     daily_topics = _pick_daily_topics()
+
+    daily_no = int(db.get_state("daily_no", "0")) + 1
+    db.set_state("daily_no", str(daily_no))
+    template1_day = (template is None
+                     and daily_no % TEMPLATE1_EVERY_N_DAYS == 0)
+
+    if template:
+        tpl_note = f"şablon: {TEMPLATE_LABELS[template]}"
+    elif template1_day:
+        tpl_note = "şablon: növbə ilə 3 ↔ 4, 1-ci stat Template 1-də (10 günlük növbə)"
+    else:
+        tpl_note = "şablon: növbə ilə 3 ↔ 4"
     await bot.send_message(
-        chat_id, f"🌅 Günün {total} postu hazırlanır, bir neçə dəqiqə çəkə bilər...")
+        chat_id, f"🌅 Günün {total} postu hazırlanır, bir neçə dəqiqə çəkə bilər...\n"
+                 f"🖼 {tpl_note}")
 
     ideas: list[str] = []
     quotes: list[str] = []
@@ -229,7 +331,13 @@ async def _send_daily_batch(bot: Bot, chat_id: int):
             else:
                 content = await asyncio.to_thread(
                     brain.generate_post, topic, ideas if ideas else None)
-            post_id = await asyncio.to_thread(_save_post, content, "az")
+            if template:
+                tpl = template
+            elif template1_day and i == 0:
+                tpl = TPL_AZ1
+            else:
+                tpl = _next_az_template()
+            post_id = await asyncio.to_thread(_save_post, content, tpl)
             ideas.append(content.idea)
             quotes.append(content.quote)
             await _send_post(bot, chat_id, post_id, prefix=f"[{i + 1}/{total}] ")
@@ -263,9 +371,9 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text(
         "Salam! Mən sənin SMM köməkçinəm. 🤖\n\n"
-        "/yeni [mövzu] — yeni stat postu yarat (AZ)\n"
+        "/yeni [mövzu] — yeni stat postu yarat (AZ, şablon seçimi ilə)\n"
         "/rusca [mövzu] — rus dilində stat postu yarat 🇷🇺\n"
-        "/gundelik — günün paketini indi hazırla (4 AZ + 1 RU)\n"
+        "/gundelik — günün paketini indi hazırla (4 AZ + 1 RU, şablon seçimi ilə)\n"
         "/siyahi — son postlara bax\n\n"
         f"Hər gün saat {config.DAILY_POST_TIME}-da avtomatik günün paketini "
         "hazırlayacağam."
@@ -273,15 +381,22 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def _generate_and_send(bot: Bot, chat_id: int, note_msg,
-                             topic: str | None, lang: str):
-    """Verilən dildə/mövzuda post yaradıb göndərir; note_msg silinir."""
+                             topic: str | None, lang: str,
+                             template: str | None = None):
+    """Verilən dildə/mövzuda post yaradıb göndərir; note_msg silinir.
+
+    template: AZ üçün şablon açarı; None olsa növbə ilə (3 ↔ 4).
+    Rusca post həmişə template2 ("ru") ilə yaradılır.
+    """
     try:
         if lang == "ru":
             content = await asyncio.to_thread(
                 brain.generate_russian_post, topic)
+            tpl = TPL_RU
         else:
             content = await asyncio.to_thread(brain.generate_post, topic)
-        post_id = await asyncio.to_thread(_save_post, content, lang)
+            tpl = template or _next_az_template()
+        post_id = await asyncio.to_thread(_save_post, content, tpl)
     except Exception:
         logger.exception("Post yaradıla bilmədi (%s)", lang)
         await note_msg.edit_text("⚠️ Xəta baş verdi. Bir az sonra yenidən cəhd et.")
@@ -309,10 +424,11 @@ async def cmd_yeni(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not _is_admin(update):
         return
     if context.args:
-        topic = " ".join(context.args)
-        msg = await update.message.reply_text("🧠 Stat hazırlanır, bir az gözlə...")
-        await _generate_and_send(
-            context.bot, update.effective_chat.id, msg, topic, "az")
+        # Sərbəst yazılmış mövzu callback-ə sığmaya bilər — user_data-da saxlanılır
+        context.user_data["custom_topic"] = " ".join(context.args)
+        await update.message.reply_text(
+            f"🖼 «{context.user_data['custom_topic']}» üçün şablonu seç:",
+            reply_markup=_template_keyboard("tplaz:custom"))
         return
     await update.message.reply_text(
         "📝 Yeni post üçün mövzunu seç:", reply_markup=_topic_keyboard("az"))
@@ -321,7 +437,9 @@ async def cmd_yeni(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_gundelik(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not _is_admin(update):
         return
-    await _send_daily_batch(context.bot, update.effective_chat.id)
+    await update.message.reply_text(
+        "🌅 Günün paketi üçün AZ şablonunu seç (rusca həmişə Template 2):",
+        reply_markup=_template_keyboard("daily"))
 
 
 async def cmd_siyahi(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -344,17 +462,44 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not _is_admin(update):
         return
 
-    action, payload = query.data.split(":")
+    action, payload = query.data.split(":", 1)
 
-    # Mövzu seçimi düymələri (/yeni və /rusca menyusu)
-    if action in ("newaz", "newru"):
-        lang = "ru" if action == "newru" else "az"
-        topic = TOPIC_CHOICES.get(payload)  # "auto" üçün None qalır
-        flag = "🇷🇺 " if lang == "ru" else ""
-        note = await query.message.edit_text(
-            f"🧠 {flag}Stat hazırlanır, bir az gözlə...")
+    # /gundelik menyusu: şablon seçildi → paket hazırlanır
+    if action == "daily":
+        template = None if payload == "auto" else payload
+        await query.message.delete()
+        await _send_daily_batch(context.bot, query.message.chat_id, template)
+        return
+
+    # /yeni menyusu, 1-ci addım: mövzu seçildi → şablon soruşulur
+    if action == "newaz":
+        label = next((lbl for key, lbl, _t in TOPIC_MENU if key == payload),
+                     "🎲 AI özü seçsin")
+        await query.message.edit_text(
+            f"🖼 {label}\nŞablonu seç:",
+            reply_markup=_template_keyboard(f"tplaz:{payload}"))
+        return
+
+    # /yeni menyusu, 2-ci addım: şablon seçildi → post hazırlanır
+    if action == "tplaz":
+        topic_key, tpl = payload.split(":")
+        if topic_key == "custom":
+            topic = context.user_data.get("custom_topic")
+        else:
+            topic = TOPIC_CHOICES.get(topic_key)  # "auto" üçün None qalır
+        template = None if tpl == "auto" else tpl
+        note = await query.message.edit_text("🧠 Stat hazırlanır, bir az gözlə...")
         await _generate_and_send(
-            context.bot, query.message.chat_id, note, topic, lang)
+            context.bot, query.message.chat_id, note, topic, "az", template)
+        return
+
+    # /rusca menyusu: mövzu seçildi → template2 ilə post hazırlanır
+    if action == "newru":
+        topic = TOPIC_CHOICES.get(payload)  # "auto" üçün None qalır
+        note = await query.message.edit_text(
+            "🧠 🇷🇺 Stat hazırlanır, bir az gözlə...")
+        await _generate_and_send(
+            context.bot, query.message.chat_id, note, topic, "ru")
         return
 
     post_id = int(payload)
@@ -415,9 +560,9 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def _post_init(app: Application):
     """Telegram-dakı əmr menyusunu yeniləyir."""
     await app.bot.set_my_commands([
-        BotCommand("yeni", "Yeni AZ stat postu (mövzu seçimi ilə)"),
+        BotCommand("yeni", "Yeni AZ stat postu (mövzu + şablon seçimi)"),
         BotCommand("rusca", "Rusca stat postu (mövzu seçimi ilə) 🇷🇺"),
-        BotCommand("gundelik", "Günün paketi: 4 AZ + 1 RU"),
+        BotCommand("gundelik", "Günün paketi: 4 AZ + 1 RU (şablon seçimi)"),
         BotCommand("siyahi", "Son postlar və statusları"),
     ])
 
