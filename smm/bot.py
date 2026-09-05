@@ -6,8 +6,7 @@
   /gundelik      - günün post paketini indi hazırla (2 ümumi + 2 enerji + 1 rus)
 
 Şablonlar: gündəlik paketdə AZ statları gün-gün növbələşir — bir gün hamısı
-template3, sonra 4, 5, 6, 7, yenidən 3 (soruşulmur). Hər
-TEMPLATE1_EVERY_N_DAYS-cı gün bütün paket template1-də olur.
+template3, sonra 4, 5, 6, 7, yenidən 3 (soruşulmur).
 /yeni ilə tək post yaradanda şablon soruşulur. Rusca statlar həmişə template2-dədir.
   /siyahi        - son postlar və statusları
   /yardim        - əmrlərin siyahısı
@@ -50,19 +49,20 @@ STATUS_LABELS = {
 _notified_model: str | None = None
 
 # Şablonlar (template_config.json açarları)
-TPL_AZ1, TPL_AZ3, TPL_AZ4, TPL_AZ5, TPL_AZ6, TPL_AZ7, TPL_RU = (
-    "az", "az3", "az4", "az5", "az6", "az7", "ru")
+TPL_AZ3, TPL_AZ4, TPL_AZ5, TPL_AZ6, TPL_AZ7, TPL_RU = (
+    "az3", "az4", "az5", "az6", "az7", "ru")
+# Köhnə postlarda saxlanmış "az" (template1) açarı artıq istifadə olunmur —
+# belə postun "Yenidən"/"Əlavə" düyməsində şablon növbədən götürülür.
+LEGACY_TEMPLATES = {"az", None, ""}
 # AZ statları növbə ilə 3 → 4 → 5 → 6 → 7 → 3 ...
 AZ_TEMPLATE_ROTATION = [TPL_AZ3, TPL_AZ4, TPL_AZ5, TPL_AZ6, TPL_AZ7]
 # Sayğaclar: az_tpl_idx — /yeni tək postlar (post-post), az_daily_tpl_idx — gündəlik (gün-gün)
-TEMPLATE1_EVERY_N_DAYS = 10                 # hər 10-cu gün bütün paket template1
 TEMPLATE_LABELS = {
     TPL_AZ3: "3️⃣ Template 3",
     TPL_AZ4: "4️⃣ Template 4",
     TPL_AZ5: "5️⃣ Template 5",
     TPL_AZ6: "6️⃣ Template 6",
     TPL_AZ7: "7️⃣ Template 7",
-    TPL_AZ1: "1️⃣ Template 1",
 }
 
 
@@ -219,9 +219,7 @@ def _template_keyboard(prefix: str) -> InlineKeyboardMarkup:
          InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ6],
                               callback_data=f"{prefix}:{TPL_AZ6}")],
         [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ7],
-                              callback_data=f"{prefix}:{TPL_AZ7}"),
-         InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ1],
-                              callback_data=f"{prefix}:{TPL_AZ1}")],
+                              callback_data=f"{prefix}:{TPL_AZ7}")],
     ])
 
 
@@ -307,21 +305,13 @@ async def _send_daily_batch(bot: Bot, chat_id: int):
     statında "çakra" sözü mütləq keçir.
 
     Şablon soruşulmur: günün bütün AZ statları eyni şablondadır, gün-gün
-    3 → 4 → 5 → 6 → 7 → 3 növbəsi ilə. Hər TEMPLATE1_EVERY_N_DAYS-cı gün bütün
-    paket template1-də olur. Rusca stat həmişə template2-dədir.
+    3 → 4 → 5 → 6 → 7 → 3 növbəsi ilə. Rusca stat həmişə template2-dədir.
     """
     total = DAILY_POST_COUNT + 1
     daily_topics = _pick_daily_topics()
 
-    daily_no = int(db.get_state("daily_no", "0")) + 1
-    db.set_state("daily_no", str(daily_no))
-    # Hər 10-cu gün bütün paket template1-də; digər günlər 3→4→5→6→7 növbəsi
-    if daily_no % TEMPLATE1_EVERY_N_DAYS == 0:
-        day_template = TPL_AZ1
-        tpl_note = f"şablon: {TEMPLATE_LABELS[TPL_AZ1]} (10 günlük növbə)"
-    else:
-        day_template = _next_daily_template()
-        tpl_note = f"şablon: {TEMPLATE_LABELS[day_template]}"
+    day_template = _next_daily_template()
+    tpl_note = f"şablon: {TEMPLATE_LABELS[day_template]}"
     await bot.send_message(
         chat_id, f"🌅 Günün {total} postu hazırlanır, bir neçə dəqiqə çəkə bilər...\n"
                  f"🖼 {tpl_note}")
@@ -521,7 +511,9 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             content = await asyncio.to_thread(
                 brain.generate_post, old["idea"], [old["image_headline"]])
-            template = old["image_subtext"] or "az"
+            template = old["image_subtext"]
+            if template in LEGACY_TEMPLATES:
+                template = _next_az_template()
             if template == "ru":
                 content = await asyncio.to_thread(
                     brain.make_russian_version, [content.quote])
@@ -542,7 +534,9 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Eyni mövzuda, amma köhnə statdan fərqli yeni stat
             content = await asyncio.to_thread(
                 brain.generate_post, old["idea"], [old["image_headline"]])
-            template = old["image_subtext"] or "az"
+            template = old["image_subtext"]
+            if template in LEGACY_TEMPLATES:
+                template = _next_az_template()
             if template == "ru":
                 content = await asyncio.to_thread(
                     brain.make_russian_version, [content.quote])

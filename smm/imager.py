@@ -5,7 +5,7 @@ təyin olunur) böyük hərflərlə, Montserrat ExtraBold şrifti ilə yazılır
 Mətn uzun olduqda şrift ölçüsü avtomatik kiçilir ki, sahəyə sığsın;
 bütün sətirlər EYNİ ölçüdə olur.
 
-Şablonlar: az (template1), ru (template2), az3 (template3, sol tərəfdə
+Şablonlar: ru (template2), az3 (template3, sol tərəfdə
 dırnaqlar arasında), az4 (template4, yuxarıdakı düzbucaqlı daxilində),
 az5 (template5, mavi-yaşıl qutuda, kiçik hərflərlə), az6 (template6, tünd
 yaşıl ləkədə dırnaq ilə narıncı xətt arasında), az7 (template7, başın sağında
@@ -104,10 +104,10 @@ def prune_old_outputs(days: int | None = None) -> int:
     return removed
 
 
-def render_post_image(quote: str, template: str = "az") -> str:
+def render_post_image(quote: str, template: str = "az3") -> str:
     """Statı şablon üzərinə yazıb hazır şəklin yolunu qaytarır.
 
-    template: template_config.json-dakı açar ("az", "ru", "az3", "az4").
+    template: template_config.json-dakı açar ("ru", "az3" … "az7").
     """
     cfg = _load_template_config(template)
     spec = cfg["quote"]

@@ -35,7 +35,6 @@ DEFAULT_FILES = [
     "README.md",
     "data/brand_profile.json",
     "data/templates/template_config.json",
-    "data/templates/template1.png",
     "data/templates/template2.png",
     "data/templates/template3.png",
     "data/templates/template4.png",

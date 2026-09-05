@@ -30,7 +30,6 @@ Anthropic Claude. `.env`-də `AI_PROVIDER` ilə seçilir.
    məlumatlarını yaz (ton, mövzular, hashtag-lar). Bu, sistemin "beynidir".
 
 6. Şablonlar `data/templates/` qovluğundadır (mətnsiz PNG, 1080×1080):
-   - `template1.png` — AZ, hər 10-cu gün bütün paket
    - `template2.png` — rusca statlar (həmişə)
    - `template3.png` — AZ, dırnaqlar arasında sol tərəfdə stat
    - `template4.png` — AZ, yuxarıdakı düzbucaqlı daxilində stat
@@ -41,7 +40,7 @@ Anthropic Claude. `.env`-də `AI_PROVIDER` ilə seçilir.
    Gündəlik paketdə AZ statları gün-gün növbələşir: template3 → 4 → 5 → 6 → 7.
    Mətnin yeri, ölçüsü
    və rəngləri `data/templates/template_config.json`-da tənzimlənir
-   (`az`, `ru`, `az3`–`az7` açarları). Bütün sətirlər eyni ölçüdə yazılır;
+   (`ru`, `az3`–`az7` açarları). Bütün sətirlər eyni ölçüdə yazılır;
    template3/4-də 2-ci sətir vurğu rəngi ilə.
 
 7. İşə sal:
