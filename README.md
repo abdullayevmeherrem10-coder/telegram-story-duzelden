@@ -35,13 +35,21 @@ Anthropic Claude. `.env`-də `AI_PROVIDER` ilə seçilir.
    - `template3.png` — AZ, mavi-yaşıl qutuda kiçik hərflərlə stat
    - `template4.png` — AZ, tünd yaşıl ləkədə dırnaq ilə xətt arasında stat
    - `template5.png` — AZ, başın sağında ağ zolaqlar üstündə qara stat
+   - `template6.png` — AZ, dırnaq altında iki üfüqi xətt arasında, 2-ci sətir qızılı
+   - `template7.png` — AZ, açıq kartda dırnaq altında, "Mütəxəssis parapsixoloq"
+     sözündən bir sətir yuxarıda bitir
+   - `template8.png` — AZ, dırnaq altında iki xətt arasında, hər 2-ci sətir yaşıl
+   - `template9.png` — AZ, aşağıdakı qara düzbucaqlıda ağ yazı
+   - `template10.png` — AZ, dırnaq altındakı göy çərçivədə ağ yazı
+   - `template6_numune.png` … `template10_numune.png` — həmin şablonların yazı
+     nümunələri (yalnız istinad üçün, koddan istifadə olunmur)
    - `template_ru1.png`, `template_ru2.png` — rusca statlar, template1/4-ün
      rusca versiyaları, gün-gün növbə ilə
 
-   Gündəlik paketdə AZ statları gün-gün növbələşir: template1 → 2 → 3 → 4 → 5.
+   Gündəlik paketdə AZ statları gün-gün növbələşir: template1 → 2 → … → 10. Rusca statlar yalnız ru1 ↔ ru2.
    Mətnin yeri, ölçüsü
    və rəngləri `data/templates/template_config.json`-da tənzimlənir
-   (`az1`–`az3`, `ru1`, `ru2` açarları). Bütün sətirlər eyni ölçüdə yazılır;
+   (`az1`–`az10`, `ru1`, `ru2` açarları). Bütün sətirlər eyni ölçüdə yazılır;
    template1/2-də 2-ci sətir vurğu rəngi ilə.
 
 7. İşə sal:
@@ -55,10 +63,10 @@ Telegram-da botuna yaz:
 
 | Əmr | Nə edir |
 |---|---|
-| `/yeni` | 16 mövzudan biri seçilir, sonra şablon (növbə ilə / 3 / 4 / 5 / 6 / 7 / 1) |
+| `/yeni` | 16 mövzudan biri seçilir, sonra şablon (növbə ilə və ya 1–10) |
 | `/yeni yay endirimi` | Verilən mövzuda post hazırlayır (şablon seçimi ilə) |
 | `/rusca` | Rusca stat postu, şablon növbə ilə ru1 ↔ ru2 |
-| `/gundelik` | Günün paketi (4 AZ + 1 RU), şablon gün-gün 1→2→3→4→5 |
+| `/gundelik` | Günün paketi (4 AZ + 1 RU), şablon gün-gün 1→2→…→10 |
 | `/siyahi` | Son postlar və statusları |
 
 Hər postun altında düymələr: **✅ Təsdiq** / **🔄 Yenidən** / **❌ Rədd et**.

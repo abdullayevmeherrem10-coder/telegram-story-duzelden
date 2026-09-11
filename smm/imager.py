@@ -11,10 +11,17 @@ az3 (template3, mavi-yaşıl qutuda, kiçik hərflərlə), az4 (template4, tünd
 yaşıl ləkədə dırnaq ilə narıncı xətt arasında), az5 (template5, başın sağında
 hər sətrin arxasında ağ zolaq, qara yazı). az3/az4/az5-də mətn sahəsi
 mütəxəssisin şəklinə toxunmayacaq şəkildə məhdudlaşdırılıb.
+az6 (template6, dırnaq altında iki üfüqi xətt arasında, 2-ci sətir qızılı),
+az7 (template7, açıq kartda dırnaq altında, "MÜTƏXƏSSİS PARAPSİXOLOQ"-dan bir
+sətir yuxarıda bitir), az8 (template8, dırnaq altında iki xətt arasında, hər
+2-ci sətir yaşıl), az9 (template9, aşağıdakı qara düzbucaqlıda ağ yazı),
+az10 (template10, dırnaq altındakı göy çərçivədə ağ yazı, başa toxunmur) —
+hamısı kiçik hərflərlə, sol tərəfə hizalanmış.
 ru1/ru2 — template1/2-nin rusca versiyaları (eyni mətn sahəsi, lang = ru).
 "quote" blokunda line_bg = sətir arxası zolağın rəngi (bg_pad_x, bg_gap ilə).
 "quote" blokunda: align = "center" | "left"; accent_line = rənglənən sətrin
-indeksi (nümunədəki kimi 2-ci sətir vurğu rəngi ilə), accent_color = həmin rəng.
+indeksi (nümunədəki kimi 2-ci sətir vurğu rəngi ilə), accent_color = həmin rəng;
+accent_lines = bir neçə sətri vurğulamaq üçün indeks siyahısı (template8).
 """
 import json
 import logging
@@ -108,7 +115,7 @@ def prune_old_outputs(days: int | None = None) -> int:
 def render_post_image(quote: str, template: str = "az1") -> str:
     """Statı şablon üzərinə yazıb hazır şəklin yolunu qaytarır.
 
-    template: template_config.json-dakı açar ("az1" … "az5", "ru1", "ru2").
+    template: template_config.json-dakı açar ("az1" … "az10", "ru1", "ru2").
     """
     cfg = _load_template_config(template)
     spec = cfg["quote"]
@@ -132,7 +139,9 @@ def render_post_image(quote: str, template: str = "az1") -> str:
     y = spec["box_top"] + (spec["box_bottom"] - spec["box_top"] - total_height) // 2
 
     align = spec.get("align", "center")
-    accent_line = spec.get("accent_line")
+    accent_lines = set(spec.get("accent_lines", []))
+    if spec.get("accent_line") is not None:
+        accent_lines.add(spec["accent_line"])
     accent_color = spec.get("accent_color", spec["color"])
     # line_bg: hər sətrin arxasına rəngli zolaq (template5 — ağ fon üstündə qara yazı)
     line_bg = spec.get("line_bg")
@@ -154,8 +163,7 @@ def render_post_image(quote: str, template: str = "az1") -> str:
                  x + w + bg_pad_x, y + line_height - bg_gap // 2],
                 fill=line_bg)
         # Vurğu sətri yalnız çoxsətirli statda (tək sətir əsas rəngdə qalır)
-        color = accent_color if (accent_line is not None and len(lines) > 1
-                                 and i == accent_line) else spec["color"]
+        color = accent_color if (len(lines) > 1 and i in accent_lines) else spec["color"]
         draw.text((x, y + text_dy), line, font=font, fill=color)
         y += line_height
 

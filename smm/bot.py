@@ -6,7 +6,7 @@
   /gundelik      - günün post paketini indi hazırla (2 ümumi + 2 enerji + 1 rus)
 
 Şablonlar: gündəlik paketdə AZ statları gün-gün növbələşir — bir gün hamısı
-template1, sonra 2, 3, 4, 5, yenidən 1 (soruşulmur).
+template1, sonra 2, 3, … 10, yenidən 1 (soruşulmur).
 /yeni ilə tək post yaradanda şablon soruşulur. Rusca statlar template_ru1 və
 template_ru2 (AZ 1/2-nin rusca versiyaları) arasında gün-gün növbələşir.
   /siyahi        - son postlar və statusları
@@ -51,42 +51,75 @@ _notified_model: str | None = None
 
 # Şablonlar (template_config.json açarları)
 TPL_AZ1, TPL_AZ2, TPL_AZ3, TPL_AZ4, TPL_AZ5 = "az1", "az2", "az3", "az4", "az5"
+TPL_AZ6, TPL_AZ7, TPL_AZ8, TPL_AZ9, TPL_AZ10 = "az6", "az7", "az8", "az9", "az10"
 TPL_RU1, TPL_RU2 = "ru1", "ru2"
 # Köhnə postlarda saxlanmış, artıq mövcud olmayan şablon açarları ("az", "ru",
 # köhnə nömrələmə) — belə postun "Yenidən"/"Əlavə" düyməsində şablon növbədən götürülür.
-# AZ statları növbə ilə 1 → 2 → 3 → 4 → 5 → 1 ...
-AZ_TEMPLATE_ROTATION = [TPL_AZ1, TPL_AZ2, TPL_AZ3, TPL_AZ4, TPL_AZ5]
+# AZ statları növbə ilə 1 → 2 → … → 10 → 1 ... (yalnız AZ; rusca ru1 ↔ ru2)
+AZ_TEMPLATE_ROTATION = [TPL_AZ1, TPL_AZ2, TPL_AZ3, TPL_AZ4, TPL_AZ5,
+                        TPL_AZ6, TPL_AZ7, TPL_AZ8, TPL_AZ9, TPL_AZ10]
 # RU statları növbə ilə ru1 ↔ ru2 (AZ 1 və 2-nin rusca versiyaları)
 RU_TEMPLATE_ROTATION = [TPL_RU1, TPL_RU2]
-# Sayğaclar: az_tpl_idx / ru_tpl_idx — tək postlar (post-post),
-#            az_daily_tpl_idx / ru_daily_tpl_idx — gündəlik paket (gün-gün)
+# Bazadakı state: az_tpl_last / ru_tpl_last — tək postlar (post-post),
+#                 az_daily_tpl_last / ru_daily_tpl_last — gündəlik paket (gün-gün);
+# dəyər = son istifadə olunan şablonun açarı (bax _next_template).
 TEMPLATE_LABELS = {
     TPL_AZ1: "1️⃣ Template 1",
     TPL_AZ2: "2️⃣ Template 2",
     TPL_AZ3: "3️⃣ Template 3",
     TPL_AZ4: "4️⃣ Template 4",
     TPL_AZ5: "5️⃣ Template 5",
+    TPL_AZ6: "6️⃣ Template 6",
+    TPL_AZ7: "7️⃣ Template 7",
+    TPL_AZ8: "8️⃣ Template 8",
+    TPL_AZ9: "9️⃣ Template 9",
+    TPL_AZ10: "🔟 Template 10",
 }
 
 
+def _next_template(pool: list[str], state_key: str) -> str:
+    """pool-dan növbəti şablonu qaytarır və onu bazada yadda saxlayır.
+
+    Bazada indeks yox, SON İSTİFADƏ OLUNAN şablonun açarı saxlanılır
+    (məs. "az5"). Beləcə siyahının sonuna yeni şablon əlavə olunanda növbə
+    pozulmur: az5-dən sonra az6 gəlir, 1-ə qayıtmır. (Köhnə indeks sayğacı
+    siyahı 5 uzunluğunda olanda 5-dən sonra sıfırlanırdı — ona görə template
+    6–10 əlavə olunandan sonra növbə yenidən 1-dən başlamışdı.)
+
+    Köhnə "<state_key>_idx" sayğacı varsa, ondan bir dəfəlik köçürülür.
+    """
+    last = db.get_state(state_key)
+    if last not in pool:
+        old_idx = db.get_state(state_key.removesuffix("_last") + "_idx")
+        if old_idx is not None:
+            # köhnə sayğac "növbəti" indeksi saxlayırdı → sonuncu = idx - 1
+            last = pool[(int(old_idx) - 1) % len(pool)]
+    if last in pool:
+        nxt = pool[(pool.index(last) + 1) % len(pool)]
+    else:
+        nxt = pool[0]
+    db.set_state(state_key, nxt)
+    return nxt
+
+
 def _next_az_template() -> str:
-    """Tək AZ postu üçün növbəti şablon (1→2→3→4→5, sayğac bazada saxlanılır)."""
-    return _rotate(AZ_TEMPLATE_ROTATION, "az_tpl_idx", 1)[0]
+    """Tək AZ postu üçün növbəti şablon (1→2→…→10, sonuncu bazada saxlanılır)."""
+    return _next_template(AZ_TEMPLATE_ROTATION, "az_tpl_last")
 
 
 def _next_daily_template() -> str:
-    """Günün paketi üçün AZ şablonu: gün-gün 1 → 2 → 3 → 4 → 5 → 1 ..."""
-    return _rotate(AZ_TEMPLATE_ROTATION, "az_daily_tpl_idx", 1)[0]
+    """Günün paketi üçün AZ şablonu: gün-gün 1 → 2 → … → 10 → 1 ..."""
+    return _next_template(AZ_TEMPLATE_ROTATION, "az_daily_tpl_last")
 
 
 def _next_ru_template() -> str:
     """Tək rusca post üçün növbəti şablon (ru1 ↔ ru2)."""
-    return _rotate(RU_TEMPLATE_ROTATION, "ru_tpl_idx", 1)[0]
+    return _next_template(RU_TEMPLATE_ROTATION, "ru_tpl_last")
 
 
 def _next_daily_ru_template() -> str:
     """Günün paketindəki rusca post üçün şablon: bir gün ru1, növbəti gün ru2."""
-    return _rotate(RU_TEMPLATE_ROTATION, "ru_daily_tpl_idx", 1)[0]
+    return _next_template(RU_TEMPLATE_ROTATION, "ru_daily_tpl_last")
 
 
 def _is_ru_template(template: str | None) -> bool:
@@ -237,7 +270,7 @@ def _topic_keyboard(lang: str) -> InlineKeyboardMarkup:
 def _template_keyboard(prefix: str) -> InlineKeyboardMarkup:
     """Şablon seçimi düymələri (/yeni menyusu). prefix: 'tplaz:<topic_key>'."""
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔁 Növbə ilə (1→2→3→4→5)",
+        [InlineKeyboardButton("🔁 Növbə ilə (1→2→…→10)",
                               callback_data=f"{prefix}:auto")],
         [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ1],
                               callback_data=f"{prefix}:{TPL_AZ1}"),
@@ -248,7 +281,17 @@ def _template_keyboard(prefix: str) -> InlineKeyboardMarkup:
          InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ4],
                               callback_data=f"{prefix}:{TPL_AZ4}")],
         [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ5],
-                              callback_data=f"{prefix}:{TPL_AZ5}")],
+                              callback_data=f"{prefix}:{TPL_AZ5}"),
+         InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ6],
+                              callback_data=f"{prefix}:{TPL_AZ6}")],
+        [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ7],
+                              callback_data=f"{prefix}:{TPL_AZ7}"),
+         InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ8],
+                              callback_data=f"{prefix}:{TPL_AZ8}")],
+        [InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ9],
+                              callback_data=f"{prefix}:{TPL_AZ9}"),
+         InlineKeyboardButton(TEMPLATE_LABELS[TPL_AZ10],
+                              callback_data=f"{prefix}:{TPL_AZ10}")],
     ])
 
 
@@ -334,7 +377,7 @@ async def _send_daily_batch(bot: Bot, chat_id: int):
     statında "çakra" sözü mütləq keçir.
 
     Şablon soruşulmur: günün bütün AZ statları eyni şablondadır, gün-gün
-    1 → 2 → 3 → 4 → 5 → 1 növbəsi ilə. Rusca stat ru1 ↔ ru2 gün-gün növbəsi ilə.
+    1 → 2 → … → 10 → 1 növbəsi ilə. Rusca stat ru1 ↔ ru2 gün-gün növbəsi ilə.
     """
     total = DAILY_POST_COUNT + 1
     daily_topics = _pick_daily_topics()
@@ -401,7 +444,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Salam! Mən sənin SMM köməkçinəm. 🤖\n\n"
         "/yeni [mövzu] — yeni stat postu yarat (AZ, şablon seçimi ilə)\n"
         "/rusca [mövzu] — rus dilində stat postu yarat 🇷🇺\n"
-        "/gundelik — günün paketini indi hazırla (4 AZ + 1 RU, şablon gün-gün 1→2→3→4→5)\n"
+        "/gundelik — günün paketini indi hazırla (4 AZ + 1 RU, şablon gün-gün 1→2→…→10)\n"
         "/siyahi — son postlara bax\n\n"
         f"Hər gün saat {config.DAILY_POST_TIME}-da avtomatik günün paketini "
         "hazırlayacağam."
@@ -413,7 +456,7 @@ async def _generate_and_send(bot: Bot, chat_id: int, note_msg,
                              template: str | None = None):
     """Verilən dildə/mövzuda post yaradıb göndərir; note_msg silinir.
 
-    template: AZ üçün şablon açarı; None olsa növbə ilə (1→2→3→4→5).
+    template: AZ üçün şablon açarı; None olsa növbə ilə (1→2→…→10).
     Rusca post ru1 ↔ ru2 növbəsi ilə yaradılır.
     """
     try:
